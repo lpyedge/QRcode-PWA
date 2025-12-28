@@ -7,6 +7,7 @@
     "dev": "vite dev",
     "dev:https": "vite dev --host",
     "build": "vite build",
+    "postbuild": "node ./scripts/copy-pages-output.cjs",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest --run",
