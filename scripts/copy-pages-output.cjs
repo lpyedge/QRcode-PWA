@@ -42,19 +42,32 @@ async function main() {
   }
 
   await rmrf(clientDest);
-  await rmrf(serverDest);
+  // We don't need serverDest (functions folder) for Advanced Mode with _worker.js
+  // await rmrf(serverDest); 
 
+  // 1. Copy client -> .svelte-kit/cloudflare
   await copyDir(clientSrc, clientDest);
   console.log('Copied client output to', clientDest);
 
+  // 2. Copy server -> .svelte-kit/cloudflare (merge)
   if (fs.existsSync(serverSrc)) {
-    await copyDir(serverSrc, serverDest);
-    console.log('Copied server output to', serverDest);
+    await copyDir(serverSrc, clientDest);
+    console.log('Merged server output into', clientDest);
+
+    // 3. Rename index.js -> _worker.js
+    const indexJs = path.join(clientDest, 'index.js');
+    const workerJs = path.join(clientDest, '_worker.js');
+    if (fs.existsSync(indexJs)) {
+      await fs.promises.rename(indexJs, workerJs);
+      console.log('Renamed index.js to _worker.js');
+    } else {
+      console.warn('Warning: index.js not found in server output, cannot create _worker.js');
+    }
   } else {
-    console.log('Server build output not found; skipping functions copy');
+    console.log('Server build output not found; skipping server merge');
   }
 
-  console.log('Done.');
+  console.log('Done. Publish directory: .svelte-kit/cloudflare');
 }
 
 main().catch((err) => {
