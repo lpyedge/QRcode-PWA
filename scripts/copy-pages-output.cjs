@@ -49,72 +49,34 @@ async function main() {
   await copyDir(clientSrc, clientDest);
   console.log('Copied client output to', clientDest);
 
-  // 2. Copy server -> .svelte-kit/cloudflare (merge)
+  // 2. Copy server output into a subfolder to avoid clobbering client assets
+  const serverOutDir = path.join(clientDest, '_server');
+  await rmrf(serverOutDir);
+
   if (fs.existsSync(serverSrc)) {
-    await copyDir(serverSrc, clientDest);
-    console.log('Merged server output into', clientDest);
+    await copyDir(serverSrc, serverOutDir);
+    console.log('Copied server output to', serverOutDir);
 
-    // 3. Rename index.js -> _worker.js
-    const indexJs = path.join(clientDest, 'index.js');
+    // 3. Create Pages Advanced Mode entry: _worker.js
     const workerJs = path.join(clientDest, '_worker.js');
-    if (fs.existsSync(indexJs)) {
-      // Read content to check if we need to shim the worker export
-      let content = await fs.promises.readFile(indexJs, 'utf8');
-      
-      // adapter-cloudflare outputs a Server class but Pages Advanced Mode needs `export default { fetch }`
-      // We append a shim if it's missing.
-      if (!content.includes('export default {') && content.includes('export {') && content.includes('Server')) {
-        console.log('Appending worker shim to index.js...');
-        const shim = `
-import { Server } from './index.js';
-import { manifest } from './manifest.js';
+    const workerContent = `
+import { Server } from './_server/index.js';
+import { manifest } from './_server/manifest.js';
 
 const server = new Server(manifest);
 
 export default {
   async fetch(request, env, ctx) {
     return server.respond(request, {
-      platform: { env, context: ctx, caches, cf: request.cf }
+      platform: { env, context: ctx, caches: globalThis.caches }
     });
   }
 };
 `;
-        // We can't easily append to the ESM file without re-exporting. 
-        // Instead, let's write a NEW _worker.js that imports the original index.js
-        // But wait, index.js is the entry. 
-        // Let's rename index.js to server-entry.js and write a new _worker.js
-        
-        const serverEntry = path.join(clientDest, 'server-entry.js');
-        await fs.promises.rename(indexJs, serverEntry);
-        
-        // Adjust imports in the shim to point to server-entry.js
-        // Note: manifest.js is in the same dir
-        const workerContent = `
-import { Server } from './server-entry.js';
-import { manifest } from './manifest.js';
-
-const server = new Server(manifest);
-
-export default {
-  async fetch(request, env, ctx) {
-    return server.respond(request, {
-      platform: { env, context: ctx, caches, cf: request.cf }
-    });
-  }
-};
-`;
-        await fs.promises.writeFile(workerJs, workerContent);
-        console.log('Created _worker.js with shim pointing to server-entry.js');
-        return; // Done, skip the simple rename
-      }
-
-      await fs.promises.rename(indexJs, workerJs);
-      console.log('Renamed index.js to _worker.js');
-    } else {
-      console.warn('Warning: index.js not found in server output, cannot create _worker.js');
-    }
+    await fs.promises.writeFile(workerJs, workerContent);
+    console.log('Wrote _worker.js for Pages Advanced Mode');
   } else {
-    console.log('Server build output not found; skipping server merge');
+    console.log('Server build output not found; skipping _worker.js generation');
   }
 
   console.log('Done. Publish directory: .svelte-kit/cloudflare');
