@@ -1,0 +1,40 @@
+{
+  "name": "qrcode-pwa",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev",
+    "dev:https": "vite dev --host",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest --run",
+    "lint": "prettier --check .",
+    "format": "prettier --write ."
+  },
+  "dependencies": {
+    "@zxing/library": "^0.21.3"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-cloudflare": "^7.2.4",
+    "@sveltejs/kit": "^2.11.0",
+    "@tailwindcss/forms": "^0.5.7",
+    "@testing-library/dom": "^9.0.0",
+    "@types/node": "^22.7.5",
+    "autoprefixer": "^10.4.19",
+    "jsdom": "^27.3.0",
+    "postcss": "^8.4.38",
+    "prettier": "^3.3.2",
+    "prettier-plugin-svelte": "^3.2.6",
+    "svelte": "^5.1.0",
+    "svelte-check": "^4.0.2",
+    "tailwindcss": "^3.4.4",
+    "tslib": "^2.6.2",
+    "typescript": "^5.5.4",
+    "vite": "^6.3.0",
+    "vite-plugin-mkcert": "^1.17.9",
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^1.3.0"
+  }
+}
