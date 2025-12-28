@@ -7,7 +7,6 @@
     "dev": "vite dev",
     "dev:https": "vite dev --host",
     "build": "vite build",
-    "postbuild": "node ./scripts/copy-pages-output.cjs",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "test": "vitest --run",
@@ -18,11 +17,10 @@
     "@zxing/library": "^0.21.3"
   },
   "devDependencies": {
-    "@sveltejs/adapter-cloudflare": "^7.2.4",
+    "@sveltejs/adapter-static": "^3.0.10",
     "@sveltejs/kit": "^2.11.0",
     "@tailwindcss/forms": "^0.5.7",
     "@testing-library/dom": "^9.0.0",
-    "@types/node": "^22.7.5",
     "autoprefixer": "^10.4.19",
     "jsdom": "^27.3.0",
     "postcss": "^8.4.38",

@@ -1,7 +1,0 @@
-# Cloudflare Workers / Pages (Wrangler) configuration
-# Used by Cloudflare Pages "Wrangler config (BETA)" detection during deploy.
-
-name = "qrcode-pwa"
-pages_build_output_dir = ".svelte-kit/cloudflare"
-compatibility_date = "2025-12-28"
-compatibility_flags = ["nodejs_compat"]
