@@ -1,6 +1,10 @@
 ﻿# QRcode-PWA
 
+- 中文（本檔） | English: [README.en.md](./README.en.md) | 日本語: [README.ja.md](./README.ja.md)
+
 SvelteKit + Svelte 5 + Tailwind CSS + PWA.
+
+> 📦 **部署指南**：[Cloudflare Pages 部署說明](./cloudflare_deployed.md)
 
 ## Features
 
@@ -95,4 +99,3 @@ npm run test:coverage      # 生成覆盖率报告
 - [ ] 历史记录云同步
 - [ ] 品牌主题/字体配置
 - [ ] 多语言支持（i18n 基础已完成）
-
