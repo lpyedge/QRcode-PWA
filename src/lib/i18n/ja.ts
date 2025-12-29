@@ -284,8 +284,7 @@ export const ja = {
   scanner: {
     title: 'QRコードスキャン',
 
-    scannerTitle: 'ライブカメラスキャン',
-    scannerSubtitle: 'HTTPS 推奨。モバイルではカメラ権限を許可してください。',
+    subtitle: 'カメラでスキャンするか、QRコード画像をアップロード。',
 
     cameraLabel: 'カメラ',
     noCameraDetected: 'カメラが見つかりません',

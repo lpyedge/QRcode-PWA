@@ -284,8 +284,7 @@ export const zh = {
   scanner: {
     title: '二维码扫码识别',
 
-    scannerTitle: '实时摄像头扫码',
-    scannerSubtitle: '推荐在 HTTPS 环境使用，移动端请允许摄像头权限。',
+    subtitle: '使用摄像头扫描，或上传二维码图片。',
 
     cameraLabel: '摄像头',
     noCameraDetected: '未检测到摄像头',

@@ -304,9 +304,7 @@ export const en = {
   scanner: {
     title: 'QR Code Scanner',
 
-    // Scanner header
-    scannerTitle: 'Live camera scan',
-    scannerSubtitle: 'Recommended on HTTPS. On mobile, allow camera permission.',
+    subtitle: 'Scan using camera or upload a QR code image.',
 
     // Form
     cameraLabel: 'Camera',
