@@ -98,16 +98,7 @@ export class QrCameraScanner {
   private videoEl: HTMLVideoElement | null = null;
   private activeDeviceId: string | null = null;
   private scanning = false;
-  private scanTimer: ReturnType<typeof setTimeout> | null = null;
-  private inFlight = false;
-  private scanEpoch = 0;
-  private decodeWatchdogTimer: ReturnType<typeof setTimeout> | null = null;
-  private clearDecodeWatchdog() {
-    if (this.decodeWatchdogTimer !== null) {
-      clearTimeout(this.decodeWatchdogTimer);
-      this.decodeWatchdogTimer = null;
-    }
-  }
+  private videoScanHandle: { stop: () => void; isRunning: () => boolean } | null = null;
   private videoHasIntrinsicSize = false;
   private cachedDevices: MediaDeviceInfo[] | null = null;
   private lastScanOpts: ScanLoopOptions | null = null;
@@ -120,7 +111,7 @@ export class QrCameraScanner {
     if (this.statusSubs.size === 0) return;
     let status: ScannerStatus;
     try {
-      status = { videoReady: this.getVideoReady(), scanning: this.scanning, inFlight: this.inFlight };
+      status = { videoReady: this.getVideoReady(), scanning: this.scanning, inFlight: false };
     } catch {
       return;
     }
@@ -148,8 +139,6 @@ export class QrCameraScanner {
   stopCamera() {
     // stopScanning is idempotent; stopCamera centralizes teardown
     this.stopScanning();
-    // clear watchdog to ensure no delayed watchdog fires after we've stopped
-    this.clearDecodeWatchdog();
     // reset intrinsic size flag so callers don't assume video still has frames
     this.videoHasIntrinsicSize = false;
     if (this.stream) {
@@ -380,98 +369,47 @@ export class QrCameraScanner {
 
   stopScanning() {
     this.scanning = false;
-    // Bump epoch so any in-flight tick results are ignored when they resolve.
-    this.scanEpoch++;
-    // clear any watchdog as we are explicitly stopping
-    this.clearDecodeWatchdog();
-    // reset inFlight so subsequent startScanning won't be blocked by a stale flag
-    this.inFlight = false;
-    if (this.scanTimer !== null) {
-      clearTimeout(this.scanTimer);
-      this.scanTimer = null;
+    if (this.videoScanHandle) {
+      this.videoScanHandle.stop();
+      this.videoScanHandle = null;
     }
-
     this.emitStatus();
   }
 
   startScanning(opts: ScanLoopOptions) {
     this.lastScanOpts = opts;
     if (!this.videoEl) throw new Error('No video element bound. Call startCamera first.');
-    if (this.scanning) {
-      // If already scanning, treat this as a hot-update: stop current loop and start new one
-      this.stopScanning();
-    }
-    // Every new scanning session gets its own epoch id so older in-flight results are ignored
-    this.scanEpoch++;
-    const fps = opts.fps ?? 10;
-    const intervalMs = Math.max(20, Math.round(1000 / fps));
-    const stopOnFirst = opts.stopOnFirstResult ?? true;
-    const decodeOpts = opts.decode;
-    // Capture the epoch for this session
-    const epoch = this.scanEpoch;
+    
+    // If already scanning, stop first
+    this.stopScanning();
+
     this.scanning = true;
     this.emitStatus();
 
-    const tick = async () => {
-      if (!this.scanning || !this.videoEl) return;
-      // Use unified readiness check
-      try {
-        const st = this.getVideoReady();
-        if (!st.ready) {
-          this.scanTimer = setTimeout(tick, intervalMs);
-          return;
-        }
-      } catch { /* video ready check may fail */ }
-      if (this.inFlight) {
-        this.scanTimer = setTimeout(tick, intervalMs);
-        return;
-      }
-      this.inFlight = true;
-      this.emitStatus();
-      // start a watchdog to recover if decode hangs
-      this.clearDecodeWatchdog();
-      this.decodeWatchdogTimer = setTimeout(() => {
-        // If this session is still waiting on a decode, stop scanning to recover.
-        // stopScanning() will bump the epoch and clear timers/watchdog.
-        if (this.scanning && this.inFlight && epoch === this.scanEpoch) {
-          try { this.stopScanning(); } catch { /* stop may fail */ }
-        }
-      }, 10000);
-      try {
-        const res = await this.decoder.decodeFromVideo(this.videoEl, decodeOpts);
-        // If scanner was stopped/restarted while decode was in-flight, ignore this result
-        if (epoch !== this.scanEpoch) return;
+    const fps = opts.fps ?? 10;
+    const stopOnFirst = opts.stopOnFirstResult ?? true;
+
+    this.videoScanHandle = this.decoder.startVideoScan(this.videoEl, {
+      fpsSearch: fps,
+      fpsTrack: fps * 2,
+      decode: opts.decode,
+      onResult: (res) => {
         if (res.ok) {
           this.onResult(res.text);
-          if (stopOnFirst) { this.stopScanning(); return; }
-        } else if (res.reason === 'unknown') {
-          opts.onDecodeError?.(res.error);
+          if (stopOnFirst) {
+            this.stopScanning();
+          }
         }
-        // otherwise benign: ignore
-      } catch (e) {
+      },
+      onError: (e) => {
         opts.onDecodeError?.(e);
-      } finally {
-        // clear watchdog
-        if (this.decodeWatchdogTimer !== null) {
-          clearTimeout(this.decodeWatchdogTimer);
-          this.decodeWatchdogTimer = null;
-        }
-        this.inFlight = false;
-        this.emitStatus();
-        // If scanning stopped or epoch changed while we were decoding, don't schedule another tick
-        if (!this.scanning || epoch !== this.scanEpoch) return;
-        this.scanTimer = setTimeout(tick, intervalMs);
       }
-    };
-
-    void tick();
+    });
   }
 
   dispose() {
     // stopCamera will also stop scanning and teardown video tracks
     this.stopCamera();
-    // ensure watchdog is cleared
-    this.clearDecodeWatchdog();
     // Clear references so scanner instance no longer holds DOM or device info
     this.videoEl = null;
     this.cachedDevices = null;
@@ -484,7 +422,7 @@ export class QrCameraScanner {
   subscribeStatus(cb: (s: ScannerStatus) => void): () => void {
     this.statusSubs.add(cb);
     try {
-      cb({ videoReady: this.getVideoReady(), scanning: this.scanning, inFlight: this.inFlight });
+      cb({ videoReady: this.getVideoReady(), scanning: this.scanning, inFlight: false });
     } catch {
       // ignore
     }
@@ -508,7 +446,7 @@ export class QrCameraScanner {
       getActiveDeviceId: () => this.getActiveDeviceId(),
       getFacingModeGuess: () => this.getFacingModeGuess(),
       getVideoReady: () => this.getVideoReady(),
-      getScanningState: () => ({ scanning: this.scanning, inFlight: this.inFlight }),
+      getScanningState: () => ({ scanning: this.scanning, inFlight: false }),
       dispose: () => this.dispose(),
     };
     return this.controls;

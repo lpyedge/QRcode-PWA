@@ -72,6 +72,9 @@ export type VideoScanOptions = {
   /** 每次成功解码回调（你业务里拿到 text 后可直接停止） */
   onResult: (res: DecodeResult & { frameTs: number; mode: VideoScanMode }) => void;
 
+  /** 错误回调 */
+  onError?: (error: unknown) => void;
+
   /** 每次尝试（可选，用于你调试/埋点） */
   onAttempt?: (info: { mode: VideoScanMode; frameTs: number }) => void;
 
@@ -711,6 +714,7 @@ export class QRDecoder {
       } catch (e: unknown) {
         const message = e && typeof e === 'object' && 'message' in e ? (e as { message: unknown }).message : e;
         debug('video tick error', message);
+        opts.onError?.(e);
       } finally {
         debug.groupEnd();
         scheduleNext();
