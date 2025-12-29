@@ -12,7 +12,7 @@ export const localeMeta = {
 export type Locale = keyof typeof localeMeta;
 
 export const locales = Object.keys(localeMeta) as Locale[];
-export const defaultLocale: Locale = 'zh-Hant';
+export const defaultLocale: Locale = 'en';
 
 const localeData: Record<Locale, Translations> = {
   'zh-Hant': zh,

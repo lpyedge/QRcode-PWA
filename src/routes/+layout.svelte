@@ -10,8 +10,12 @@
     normalizeLocale,
     stripLocaleFromPath,
     buildLocalePath,
+    type Locale,
   } from '$lib/i18n';
   import PwaHelper from '$lib/components/PwaHelper.svelte';
+  import Dropdown from '$lib/components/Dropdown.svelte';
+  import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
   const currentYear = new Date().getFullYear();
   const navItems = [
@@ -23,14 +27,12 @@
     '/generate': 'seo.generator',
     '/scan': 'seo.scan',
     '/about': 'seo.about',
-    '/language': 'seo.language',
   };
 
   let mobileNavOpen = false;
   let currentLocale = normalizeLocale();
   let routePath = '/';
   let canonicalPath = '/generate';
-  let isLanguagePage = false;
   let siteOrigin = '';
   let seoKey = 'seo.generator';
   let pageTitle = '';
@@ -43,6 +45,42 @@
   let jsonLd = '';
   let homeHref = '';
   let navLinks: Array<{ href: string; labelKey: string }> = [];
+  let suggestedLocale: Locale | null = null;
+
+  const languageOptions = locales.map((l) => ({
+    value: l,
+    label: localeMeta[l].label,
+  }));
+
+  onMount(() => {
+    if (!$page.params.lang) {
+      const browserLang = navigator.language.toLowerCase();
+      // Only suggest switching if the browser language matches a supported non-default language
+      // and the current locale is different.
+      // English users (default) will not see a banner.
+      if (browserLang.startsWith('zh') && currentLocale !== 'zh-Hant') {
+        suggestedLocale = 'zh-Hant';
+      } else if (browserLang.startsWith('ja') && currentLocale !== 'ja') {
+        suggestedLocale = 'ja';
+      }
+    }
+  });
+
+  $: if ($page.params.lang) {
+    suggestedLocale = null;
+  }
+
+  function switchLanguage() {
+    if (suggestedLocale) {
+      goto(buildLocalePath(suggestedLocale, canonicalPath));
+    }
+  }
+
+  function handleLanguageChange(event: CustomEvent<Locale>) {
+    const newLocale = event.detail;
+    const newPath = buildLocalePath(newLocale, canonicalPath);
+    goto(newPath);
+  }
 
   function toggleMobileNav() {
     mobileNavOpen = !mobileNavOpen;
@@ -62,21 +100,16 @@
       ? import.meta.env.VITE_SITE_URL.replace(/\/$/, '')
       : $page.url.origin;
   $: canonicalPath = routePath === '/' ? '/generate' : routePath;
-  $: isLanguagePage = canonicalPath === '/language';
   $: seoKey = seoRouteMap[canonicalPath] ?? 'seo.generator';
   $: pageTitle = $t(`${seoKey}.title`, $t('app.title'));
   $: pageDescription = $t(`${seoKey}.description`, $t('app.description'));
   $: pageKeywords = $t(`${seoKey}.keywords`, $t('app.keywords'));
-  $: canonicalHref = isLanguagePage
-    ? `${siteOrigin}/language`
-    : `${siteOrigin}${buildLocalePath(currentLocale, canonicalPath)}`;
-  $: alternateLinks = isLanguagePage
-    ? []
-    : locales.map((localeValue) => ({
-        hreflang: localeMeta[localeValue].hreflang,
-        href: `${siteOrigin}${buildLocalePath(localeValue, canonicalPath)}`,
-      }));
-  $: xDefaultHref = `${siteOrigin}/language`;
+  $: canonicalHref = `${siteOrigin}${buildLocalePath(currentLocale, canonicalPath)}`;
+  $: alternateLinks = locales.map((localeValue) => ({
+    hreflang: localeMeta[localeValue].hreflang,
+    href: `${siteOrigin}${buildLocalePath(localeValue, canonicalPath)}`,
+  }));
+  $: xDefaultHref = `${siteOrigin}${routePath}`;
   $: ogImageUrl = `${siteOrigin}/icons/icon-512.png`;
   $: jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -118,23 +151,55 @@
   <meta name="twitter:image" content={ogImageUrl} />
   <script type="application/ld+json">{jsonLd}</script>
 </svelte:head>
-
 <div class="min-h-screen bg-slate-900 text-slate-100">
+  {#if suggestedLocale}
+    <div class="relative z-50 flex items-center justify-center gap-4 border-b border-white/10 bg-slate-800 px-4 py-2 text-sm text-white">
+      <span>
+        {#if suggestedLocale === 'zh-Hant'}
+          您似乎位於中文地區，是否切換至中文版？
+        {:else if suggestedLocale === 'ja'}
+          日本語を使用されているようです。日本語版に切り替えますか？
+        {/if}
+      </span>
+      <div class="flex items-center gap-4">
+        <button class="font-bold text-cyan-300 hover:text-cyan-200" on:click={switchLanguage}>
+          {#if suggestedLocale === 'zh-Hant'}
+            切換
+          {:else if suggestedLocale === 'ja'}
+            切り替え
+          {/if}
+        </button>
+        <button class="text-slate-400 hover:text-white" on:click={() => suggestedLocale = null} aria-label="Close">
+          ✕
+        </button>
+      </div>
+    </div>
+  {/if}
   <header class="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
     <a class="flex items-center gap-3 text-white" href={homeHref} on:click={closeMobileNav}>
       <img src="/favicon.svg" alt="{$t('layout.appName')}" class="h-9 w-9" />
       <span class="text-2xl font-semibold tracking-wide">{$t('layout.appName')}</span>
     </a>
-    <nav class="hidden gap-6 text-sm font-medium sm:flex">
+    <nav class="hidden gap-6 text-sm font-medium sm:flex sm:items-center">
       {#each navLinks as link}
         <a class="hover:text-cyan-300" href={link.href}>{$t(link.labelKey)}</a>
       {/each}
+      <div class="w-32">
+        <Dropdown
+          options={languageOptions}
+          value={currentLocale}
+          on:change={handleLanguageChange}
+          triggerClass="flex w-full items-center justify-between rounded-xl border border-white/20 bg-transparent px-3 py-2 text-left text-sm text-white transition hover:border-cyan-300 focus:outline-none"
+          menuClass="bg-slate-900 border border-white/10 text-white"
+          optionClass="hover:bg-white/10"
+        />
+      </div>
     </nav>
     <button
       type="button"
       class="rounded-xl border border-white/20 p-2 text-white transition hover:border-cyan-300 hover:text-cyan-200 sm:hidden"
       on:click={toggleMobileNav}
-    aria-label={$t('common.openNav')}
+      aria-label={$t('common.openNav')}
     >
       <svg viewBox="0 0 24 24" class="h-6 w-6" aria-hidden="true">
         <path
@@ -152,6 +217,16 @@
       {#each navLinks as link}
         <a class="rounded-xl px-3 py-2 hover:bg-white/10" href={link.href} on:click={closeMobileNav}>{$t(link.labelKey)}</a>
       {/each}
+      <div class="px-3 py-2">
+        <Dropdown
+          options={languageOptions}
+          value={currentLocale}
+          on:change={handleLanguageChange}
+          triggerClass="flex w-full items-center justify-between rounded-xl border border-white/20 bg-transparent px-3 py-2 text-left text-sm text-white transition hover:border-cyan-300 focus:outline-none"
+          menuClass="bg-slate-900 border border-white/10 text-white"
+          optionClass="hover:bg-white/10"
+        />
+      </div>
     </nav>
   {/if}
 
