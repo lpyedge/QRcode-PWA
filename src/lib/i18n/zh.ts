@@ -79,13 +79,13 @@ export const zh = {
     },
 
     modeHints: {
-      text: '纯文本 / 备注说明',
-      url: 'http/https 网站或 H5',
-      wifi: '扫码即连热点',
-      email: 'mailto 协议',
-      tel: '一键拨号',
-      sms: '预设号码与内容',
-      vcard: 'vCard 3.0'
+      text: '输入任意文本',
+      url: '输入网址跳转',
+      wifi: '扫码连接 Wi-Fi',
+      email: '发送邮件',
+      tel: '拨打电话',
+      sms: '发送短信',
+      vcard: '添加联系人'
     },
 
     modeDescriptions: {
@@ -190,7 +190,7 @@ export const zh = {
       marginUnit: '模块',
 
       logo: 'Logo',
-      logoHint: '启用后在中心放置 Logo（容错强制 ≥ Q）',
+      logoHint: '在二维码中心添加 Logo（会自动调整容错率）',
       logoSize: '大小',
       logoPadding: '留白',
       logoShape: '形状',
@@ -249,7 +249,7 @@ export const zh = {
       title: '模板预览',
       show: '查看',
       hide: '隐藏',
-      hint: '需要时再展开，减少页面占用。'
+      hint: '预览生成的二维码效果'
     },
 
     previewEmpty: '输入内容后自动生成预览',
@@ -322,11 +322,11 @@ export const zh = {
     },
 
     errors: {
-      notSupported: '当前浏览器不支持摄像头调用',
-      permissionDenied: '摄像头权限被拒绝，请在系统或浏览器中开启权限',
-      startFailed: '无法启动摄像头，请检查权限或设备占用情况',
-      uploadFailed: '无法识别上传的图片，请尝试更清晰的二维码',
-      copyNotSupported: '当前环境不支持自动复制，请手动复制'
+      notSupported: '无法访问摄像头，请更换浏览器尝试',
+      permissionDenied: '请允许访问摄像头以进行扫描',
+      startFailed: '摄像头启动失败，请检查是否被占用',
+      uploadFailed: '无法识别，请尝试更清晰的图片',
+      copyNotSupported: '自动复制失败，请手动复制'
     }
   },
 

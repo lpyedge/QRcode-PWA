@@ -79,13 +79,13 @@ export const ja = {
     },
 
     modeHints: {
-      text: 'プレーンテキスト / メモ',
-      url: 'http/https のWebサイト',
-      wifi: 'スキャンしてWi‑Fiに接続',
-      email: 'mailto スキーム',
-      tel: 'タップで発信',
-      sms: '宛先と本文を事前設定',
-      vcard: 'vCard 3.0'
+      text: '任意のテキストを入力',
+      url: 'Webサイトへ移動',
+      wifi: 'Wi-Fi に接続',
+      email: 'メールを送信',
+      tel: '電話をかける',
+      sms: 'SMS を送信',
+      vcard: '連絡先を追加'
     },
 
     modeDescriptions: {
@@ -190,7 +190,7 @@ export const ja = {
       marginUnit: 'モジュール',
 
       logo: 'ロゴ',
-      logoHint: '有効にすると中央にロゴを配置（誤り訂正は最低でも Q）',
+      logoHint: 'ロゴを追加（誤り訂正は自動調整されます）',
       logoSize: 'サイズ',
       logoPadding: '余白（パディング）',
       logoShape: '形状',
@@ -249,7 +249,7 @@ export const ja = {
       title: 'テンプレートプレビュー',
       show: '表示',
       hide: '非表示',
-      hint: '必要なときだけ展開してスペースを節約します。'
+      hint: '生成されたQRコードをプレビュー'
     },
 
     previewEmpty: '内容を入力すると自動でプレビューを生成します',
@@ -322,11 +322,11 @@ export const ja = {
     },
 
     errors: {
-      notSupported: 'このブラウザはカメラアクセスに対応していません',
-      permissionDenied: 'カメラ権限が拒否されました。システムまたはブラウザ設定で許可してください',
-      startFailed: 'カメラを開始できませんでした。権限や他アプリの使用状況を確認してください',
-      uploadFailed: '画像を読み取れませんでした。より鮮明なQR画像をお試しください',
-      copyNotSupported: 'この環境では自動コピーに対応していません。手動でコピーしてください'
+      notSupported: 'カメラにアクセスできません。別のブラウザをお試しください',
+      permissionDenied: 'スキャンするためにカメラを許可してください',
+      startFailed: 'カメラを起動できません。他のアプリで使用されていないか確認してください',
+      uploadFailed: '認識できません。より鮮明な画像をお試しください',
+      copyNotSupported: '自動コピーに失敗しました。手動でコピーしてください'
     }
   },
 

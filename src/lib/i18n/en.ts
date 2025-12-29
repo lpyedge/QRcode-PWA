@@ -83,13 +83,13 @@ export const en = {
     },
 
     modeHints: {
-      text: 'Plain text / notes',
-      url: 'http/https website or H5 page',
-      wifi: 'Scan to join hotspot',
-      email: 'mailto scheme',
-      tel: 'Tap to call',
-      sms: 'Preset number and message',
-      vcard: 'vCard 3.0'
+      text: 'Enter any text',
+      url: 'Enter URL to jump',
+      wifi: 'Scan to connect Wi-Fi',
+      email: 'Send email',
+      tel: 'Call phone number',
+      sms: 'Send SMS message',
+      vcard: 'Add contact info'
     },
 
     modeDescriptions: {
@@ -201,7 +201,7 @@ export const en = {
 
       // Logo
       logo: 'Logo',
-      logoHint: 'When enabled, a logo is placed in the center (error correction forced to ≥ Q)',
+      logoHint: 'Add a logo (Error correction auto-adjusted)',
       logoSize: 'Size',
       logoPadding: 'Padding',
       logoShape: 'Shape',
@@ -266,7 +266,7 @@ export const en = {
       title: 'Template preview',
       show: 'Show',
       hide: 'Hide',
-      hint: 'Expand only when needed to save space.'
+      hint: 'Preview the generated QR code'
     },
 
     previewEmpty: 'Enter content to generate a preview automatically',
@@ -348,11 +348,11 @@ export const en = {
 
     // Errors
     errors: {
-      notSupported: 'This browser does not support camera access',
-      permissionDenied: 'Camera permission denied. Enable it in system or browser settings',
-      startFailed: 'Failed to start camera. Check permission or device usage.',
-      uploadFailed: 'Could not read the uploaded image. Try a clearer QR code.',
-      copyNotSupported: 'Auto-copy is not supported here. Please copy manually'
+      notSupported: 'Cannot access camera, please try another browser',
+      permissionDenied: 'Please allow camera access to scan',
+      startFailed: 'Camera failed to start, please check if it\'s in use',
+      uploadFailed: 'Cannot recognize, please try a clearer image',
+      copyNotSupported: 'Auto-copy failed, please copy manually'
     }
   },
 
