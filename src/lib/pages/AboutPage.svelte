@@ -1,13 +1,13 @@
 <script lang="ts">
   import { t, locale, buildLocalePath } from '$lib/i18n';
 
-  const features = [
+  $: features = [
     { title: $t('about.features.f1.title'), body: $t('about.features.f1.body') },
     { title: $t('about.features.f2.title'), body: $t('about.features.f2.body') },
     { title: $t('about.features.f3.title'), body: $t('about.features.f3.body') },
   ];
 
-  const stats = [
+  $: stats = [
     { label: $t('about.stats.crossPlatform'), value: '360°' },
     { label: $t('about.stats.fps'), value: '60fps' },
     { label: $t('about.stats.max'), value: '4K' },

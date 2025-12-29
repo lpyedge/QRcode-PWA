@@ -4,7 +4,8 @@ import { localeMeta, normalizeLocale } from '$lib/i18n';
 const htmlLangPattern = /<html lang="[^"]*"/;
 
 export const handle: Handle = async ({ event, resolve }) => {
-  const lang = normalizeLocale(event.params.lang);
+  const [, segment] = event.url.pathname.split('/');
+  const lang = normalizeLocale(segment);
   const response = await resolve(event, {
     transformPageChunk: ({ html }) =>
       html.replace(htmlLangPattern, `<html lang="${localeMeta[lang].htmlLang}"`),

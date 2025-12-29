@@ -40,8 +40,8 @@ export class QrError extends Error {
     this.context = context;
     
     // Maintains proper stack trace for where error was thrown (V8 only)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, QrError);
+    if ('captureStackTrace' in Error && typeof (Error as { captureStackTrace?: Function }).captureStackTrace === 'function') {
+      (Error as { captureStackTrace?: (err: unknown, ctor?: unknown) => void }).captureStackTrace?.(this, QrError);
     }
   }
 

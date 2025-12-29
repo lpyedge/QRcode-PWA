@@ -59,6 +59,8 @@ export const zh = {
     unsupportedMode: '不支持的模式：{mode}'
   },
 
+  pages: {},
+
   generator: {
     title: '二维码生成与风格化',
     previewLabel: '预览',

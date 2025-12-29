@@ -59,6 +59,8 @@ export const ja = {
     unsupportedMode: '未対応のモード：{mode}'
   },
 
+  pages: {},
+
   generator: {
     title: 'QRコード生成＆デザイン',
     previewLabel: 'プレビュー',
@@ -491,7 +493,6 @@ export const ja = {
     }
   },
 
-  pages: {},
   layout: {
     appName: 'QRcode-PWA'
   },

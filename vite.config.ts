@@ -93,7 +93,9 @@ export default defineConfig({
       configureServer(server) {
         server.middlewares.use((req, res, next) => {
           try {
-            const url = req.url || '';
+            const url = typeof req === 'object' && req !== null && 'url' in req && typeof (req as { url?: unknown }).url === 'string'
+              ? (req as { url?: string }).url ?? ''
+              : '';
             if (url.startsWith('/node_modules/@zxing/src/')) {
               res.statusCode = 200;
               res.setHeader('Content-Type', 'application/javascript');

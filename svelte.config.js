@@ -6,13 +6,21 @@ const config = {
     adapter: adapter({
       pages: 'build',
       assets: 'build',
-      fallback: 'index.html',
+      fallback: '404.html',
       precompress: false,
       strict: true
     }),
     alias: {
       $components: './src/lib/components',
       $utils: './src/lib/utils'
+    },
+    prerender: {
+      entries: [
+        '*',
+        '/en/scan', '/en/about', '/en/generate',
+        '/ja/scan', '/ja/about', '/ja/generate',
+        '/zh-Hant/scan', '/zh-Hant/about', '/zh-Hant/generate'
+      ]
     }
   },
   preprocess: [vitePreprocess({ postcss: true })]
