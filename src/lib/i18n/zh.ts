@@ -61,7 +61,6 @@ export const zh = {
 
   generator: {
     title: '二维码生成与风格化',
-    subtitle: '移动端默认固定预览；支持渐变、定位点样式、流体模块与 Logo 挖空。',
     previewLabel: '预览',
 
     tabs: {
@@ -283,8 +282,7 @@ export const zh = {
   },
 
   scanner: {
-    title: '浏览器端扫码识别',
-    subtitle: 'ZXing 支持 HTTPS 摄像头实时解码，并可复制或跳转内容。',
+    title: '二维码扫码识别',
 
     scannerTitle: '实时摄像头扫码',
     scannerSubtitle: '推荐在 HTTPS 环境使用，移动端请允许摄像头权限。',
@@ -490,12 +488,6 @@ export const zh = {
     qrcore: {
       unexpectedMatrixSize: '二维码矩阵大小异常：{w}x{h}，这不是有效的二维码模块网格。',
       rgbaLengthMismatch: 'RGBA 长度不匹配：得到 {got}，预期 {expected}（{w}x{h}）'
-    }
-  },
-
-  pages: {
-    generator: {
-      title: 'QRcode-PWA 生成器'
     }
   },
 

@@ -63,8 +63,6 @@ export const en = {
   // QR generator page
   generator: {
     title: 'QR Code Generator & Styling',
-    subtitle:
-      'On mobile the preview is pinned by default; supports gradients, finder styles, fluid modules, and logo cutout.',
     previewLabel: 'Preview',
 
     // Tabs
@@ -304,8 +302,7 @@ export const en = {
 
   // QR scanner page
   scanner: {
-    title: 'Scan QR codes in your browser',
-    subtitle: 'ZXing supports real-time decoding via HTTPS camera, with copy/open actions.',
+    title: 'QR Code Scanner',
 
     // Scanner header
     scannerTitle: 'Live camera scan',
@@ -525,12 +522,7 @@ export const en = {
     }
   },
 
-  pages: {
-    generator: {
-      title: 'QRcode-PWA Generator'
-    }
-  },
-
+  pages: {},
   layout: {
     appName: 'QRcode-PWA'
   },

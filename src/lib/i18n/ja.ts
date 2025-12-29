@@ -61,7 +61,6 @@ export const ja = {
 
   generator: {
     title: 'QRコード生成＆デザイン',
-    subtitle: 'モバイルではプレビューを固定表示。グラデーション、ファインダー形状、流体モジュール、ロゴくり抜きに対応。',
     previewLabel: 'プレビュー',
 
     tabs: {
@@ -283,8 +282,7 @@ export const ja = {
   },
 
   scanner: {
-    title: 'ブラウザで QRコードをスキャン',
-    subtitle: 'ZXing により HTTPS カメラでリアルタイム解析。コピー/開く操作にも対応。',
+    title: 'QRコードスキャン',
 
     scannerTitle: 'ライブカメラスキャン',
     scannerSubtitle: 'HTTPS 推奨。モバイルではカメラ権限を許可してください。',
@@ -494,12 +492,7 @@ export const ja = {
     }
   },
 
-  pages: {
-    generator: {
-      title: 'QRcode-PWA ジェネレーター'
-    }
-  },
-
+  pages: {},
   layout: {
     appName: 'QRcode-PWA'
   },

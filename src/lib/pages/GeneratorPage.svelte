@@ -333,25 +333,9 @@
   }
 </script>
 
-<section id="generator" class="space-y-6 pb-10">
-  <header class="flex flex-col gap-4 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-xl shadow-cyan-500/10 lg:flex-row lg:items-center lg:justify-between">
-    <div class="space-y-2">
-      <p class="text-xs uppercase tracking-[0.4em] text-cyan-300">{$t('pages.generator.title')}</p>
-      <h1 class="text-2xl font-semibold tracking-tight text-white">{$t('generator.title')}</h1>
-      <p class="hidden text-sm text-slate-300 lg:block">{$t('generator.subtitle')}</p>
-    </div>
-
-    <div class="flex flex-wrap items-center gap-3">
-      <button type="button" class="rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:border-cyan-300" on:click={copyPayload}>
-        {$t('common.copyContent')}
-      </button>
-      <button type="button" class="rounded-2xl border border-white/20 bg-white/5 px-5 py-3 text-sm text-slate-200 hover:border-white/30" on:click={resetSettings}>
-        {$t('common.reset')}
-      </button>
-      {#if copyMessage}
-        <span class="text-xs text-cyan-300">{copyMessage}</span>
-      {/if}
-    </div>
+<section id="generator" class="space-y-6 pb-6 md:pb-10">
+  <header class="space-y-2 text-center pt-6 md:pt-0">
+    <h1 class="text-2xl font-bold text-white md:text-4xl">{$t('generator.title')}</h1>
   </header>
 
   <div class="grid gap-6 md:grid-cols-[1fr,0.72fr] lg:grid-cols-[1.15fr,0.85fr]">
@@ -464,11 +448,12 @@
               </button>
             </div>
 
-            <div class="flex w-60 flex-col gap-3">
+            <div class="flex flex-1 min-w-0 flex-col gap-2">
               <ErrorCorrectionSelector
                 value={settings.errorCorrectionLevel}
                 logoEnabled={!!settings.logo?.enabled}
                 menuOpen={errorCorrectionMenuOpen}
+                compact={true}
                 on:change={(e) => setErrorCorrection(e.detail)}
                 on:toggle={() => (errorCorrectionMenuOpen = !errorCorrectionMenuOpen)}
               />

@@ -252,11 +252,9 @@
   let switchingCamera = false;
 </script>
 
-<section class="space-y-8 py-10">
-  <header class="space-y-3 text-center">
-    <p class="text-xs uppercase tracking-[0.4em] text-cyan-300">QR Scan</p>
-    <h1 class="text-3xl font-bold text-white md:text-4xl">{$t('scanner.title')}</h1>
-    <p class="text-base text-slate-300">{$t('scanner.subtitle')}</p>
+<section class="space-y-6 py-6 md:py-10">
+  <header class="space-y-2 text-center">
+    <h1 class="text-2xl font-bold text-white md:text-4xl">{$t('scanner.title')}</h1>
   </header>
 
   <div class="grid gap-8 lg:grid-cols-[1fr,1fr]">

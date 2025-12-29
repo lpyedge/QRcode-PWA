@@ -8,6 +8,7 @@
   export let value: GeneratorSettings['errorCorrectionLevel'];
   export let logoEnabled: boolean = false;
   export let menuOpen: boolean = false;
+  export let compact: boolean = false;
 
   const dispatch = createEventDispatcher<{
     change: GeneratorSettings['errorCorrectionLevel'];
@@ -27,17 +28,19 @@
 
 <div class="relative w-full">
   <div class="inline-flex h-[46px] w-full rounded-2xl border border-white/10 bg-white/5 shadow-sm">
-    <div class="flex h-full w-[60%] items-center justify-center bg-white/5 px-4 text-sm font-semibold text-slate-400">
-      {$t('generator.errorCorrection.label')}
-    </div>
+    {#if !compact}
+      <div class="flex h-full w-[60%] items-center justify-center bg-white/5 px-4 text-sm font-semibold text-slate-400">
+        {$t('generator.errorCorrection.label')}
+      </div>
+    {/if}
     
     <Dropdown
       {options}
       bind:value
-      width="40%"
+      width={compact ? "100%" : "40%"}
       placement="top-end"
       containerClass="h-full"
-      triggerClass="flex h-full w-full items-center justify-between border-l border-white/10 bg-slate-900/30 px-3 font-mono text-sm text-white transition hover:bg-slate-900/50 focus:bg-slate-900/50 focus:outline-none"
+      triggerClass={`flex h-full w-full items-center justify-between ${compact ? '' : 'border-l border-white/10'} bg-slate-900/30 px-3 font-mono text-sm text-white transition hover:bg-slate-900/50 focus:bg-slate-900/50 focus:outline-none`}
       menuClass="w-[250%] right-0"
       title={logoEnabled ? $t('generator.errorCorrection.logoHint') : ''}
       on:change={(e) => dispatch('change', e.detail)}
