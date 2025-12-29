@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '$lib/i18n';
+  import { t, locale, buildLocalePath } from '$lib/i18n';
 
   const features = [
     { title: $t('about.features.f1.title'), body: $t('about.features.f1.body') },
@@ -13,6 +13,9 @@
     { label: $t('about.stats.max'), value: '4K' },
     { label: $t('about.stats.offline'), value: '100%' },
   ];
+
+  $: homeHref = buildLocalePath($locale, '/generate');
+  $: scanHref = buildLocalePath($locale, '/scan');
 </script>
 
 <section class="flex flex-col gap-12 py-10">
@@ -28,10 +31,10 @@
         {$t('about.hero.body')}
       </p>
       <div class="flex flex-wrap gap-4">
-        <a href="/" class="rounded-full bg-cyan-500 px-6 py-3 text-base font-semibold text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-400">
+        <a href={homeHref} class="rounded-full bg-cyan-500 px-6 py-3 text-base font-semibold text-slate-900 shadow-lg shadow-cyan-500/30 transition hover:bg-cyan-400">
           {$t('about.hero.ctaStart')}
         </a>
-        <a href="/scan" class="rounded-full border border-white/30 px-6 py-3 text-base font-semibold text-slate-100 transition hover:border-cyan-300 hover:text-cyan-200">
+        <a href={scanHref} class="rounded-full border border-white/30 px-6 py-3 text-base font-semibold text-slate-100 transition hover:border-cyan-300 hover:text-cyan-200">
           {$t('about.hero.ctaScan')}
         </a>
       </div>

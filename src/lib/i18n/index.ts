@@ -1,24 +1,34 @@
 import { writable, derived, get } from 'svelte/store';
-import { zh, type Translations } from './zh';
+import { zh } from './zh';
+import { en, type Translations } from './en';
+import { ja } from './ja';
 
-type Locale = 'zh';
+export const localeMeta = {
+  'zh-Hant': { label: '繁體中文', hreflang: 'zh-Hant', htmlLang: 'zh-Hant' },
+  en: { label: 'English', hreflang: 'en', htmlLang: 'en' },
+  ja: { label: '日本語', hreflang: 'ja', htmlLang: 'ja' },
+} as const;
+
+export type Locale = keyof typeof localeMeta;
+
+export const locales = Object.keys(localeMeta) as Locale[];
+export const defaultLocale: Locale = 'zh-Hant';
 
 const localeData: Record<Locale, Translations> = {
-  zh,
+  'zh-Hant': zh,
+  en,
+  ja,
 };
 
-// 当前语言存储
-export const locale = writable<Locale>('zh');
+export const locale = writable<Locale>(defaultLocale);
 
-// 派生的翻译对象
 export const t = derived(locale, ($locale) => {
   const translations = localeData[$locale];
-  
-  // 通过键路径获取翻译文本
+
   return function (key: string, fallback?: string): string {
     const keys = key.split('.');
     let value: unknown = translations;
-    
+
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = (value as Record<string, unknown>)[k];
@@ -26,13 +36,32 @@ export const t = derived(locale, ($locale) => {
         return fallback ?? key;
       }
     }
-    
+
     return typeof value === 'string' ? value : (fallback ?? key);
   };
 });
 
-// 获取当前翻译对象（用于直接访问）
-// 使用 get() 同步读取当前值，避免订阅导致的记忆体泄漏
+export function isLocale(value?: string): value is Locale {
+  return !!value && (locales as readonly string[]).includes(value);
+}
+
+export function normalizeLocale(value?: string): Locale {
+  if (value === 'zh') return 'zh-Hant';
+  return isLocale(value) ? value : defaultLocale;
+}
+
+export function stripLocaleFromPath(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length && isLocale(segments[0])) segments.shift();
+  const rest = `/${segments.join('/')}`;
+  return rest === '/' ? '/' : rest;
+}
+
+export function buildLocalePath(localeValue: Locale, path = '/'): string {
+  const normalized = path === '/' ? '' : path.startsWith('/') ? path : `/${path}`;
+  return `/${localeValue}${normalized}`;
+}
+
 export function getTranslations(): Translations {
   return localeData[get(locale)];
 }
