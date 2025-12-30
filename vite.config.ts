@@ -12,12 +12,13 @@ export default defineConfig({
       manifest: {
         name: 'QRcode-PWA',
         short_name: 'QRcode-PWA',
-        description: '跨端二維碼生成與掃碼工具',
-        start_url: '/',
+        description: 'Cross-platform QR code generator and scanner',
+        start_url: '/en/generate',
+        scope: '/',
         display: 'standalone',
         background_color: '#0f172a',
         theme_color: '#0ea5e9',
-        lang: 'zh-Hant',
+        lang: 'en',
         icons: [
           // SVG favicon (keeps vector fallback)
           {

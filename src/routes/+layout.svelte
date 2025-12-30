@@ -7,6 +7,7 @@
     locale,
     locales,
     localeMeta,
+    defaultLocale,
     normalizeLocale,
     stripLocaleFromPath,
     buildLocalePath,
@@ -55,13 +56,17 @@
   onMount(() => {
     if (!$page.params.lang) {
       const browserLang = navigator.language.toLowerCase();
-      // Only suggest switching if the browser language matches a supported non-default language
-      // and the current locale is different.
-      // English users (default) will not see a banner.
-      if (browserLang.startsWith('zh') && currentLocale !== 'zh-Hant') {
-        suggestedLocale = 'zh-Hant';
-      } else if (browserLang.startsWith('ja') && currentLocale !== 'ja') {
+      // Detect Chinese variants: zh, zh-cn, zh-tw, zh-hk, zh-sg, zh-hans, zh-hant, etc.
+      if (browserLang.startsWith('zh') && currentLocale !== 'zh') {
+        suggestedLocale = 'zh';
+      }
+      // Detect Japanese
+      else if (browserLang.startsWith('ja') && currentLocale !== 'ja') {
         suggestedLocale = 'ja';
+      }
+      // Detect English variants: en, en-us, en-gb, en-au, en-ca, en-nz, en-in, etc.
+      else if (browserLang.startsWith('en') && currentLocale !== 'en') {
+        suggestedLocale = 'en';
       }
     }
   });
@@ -109,7 +114,8 @@
     hreflang: localeMeta[localeValue].hreflang,
     href: `${siteOrigin}${buildLocalePath(localeValue, canonicalPath)}`,
   }));
-  $: xDefaultHref = `${siteOrigin}${routePath}`;
+  // x-default should point to the default locale (en), not a non-existent /language path
+  $: xDefaultHref = `${siteOrigin}${buildLocalePath(defaultLocale, canonicalPath)}`;
   $: ogImageUrl = `${siteOrigin}/icons/icon-512.png`;
   $: jsonLd = JSON.stringify({
     '@context': 'https://schema.org',
@@ -155,18 +161,22 @@
   {#if suggestedLocale}
     <div class="relative z-50 flex items-center justify-center gap-4 border-b border-white/10 bg-slate-800 px-4 py-2 text-sm text-white">
       <span>
-        {#if suggestedLocale === 'zh-Hant'}
+        {#if suggestedLocale === 'zh'}
           您似乎位於中文地區，是否切換至中文版？
         {:else if suggestedLocale === 'ja'}
           日本語を使用されているようです。日本語版に切り替えますか？
+        {:else if suggestedLocale === 'en'}
+          It looks like you prefer English. Switch to English version?
         {/if}
       </span>
       <div class="flex items-center gap-4">
         <button class="font-bold text-cyan-300 hover:text-cyan-200" on:click={switchLanguage}>
-          {#if suggestedLocale === 'zh-Hant'}
+          {#if suggestedLocale === 'zh'}
             切換
           {:else if suggestedLocale === 'ja'}
             切り替え
+          {:else if suggestedLocale === 'en'}
+            Switch
           {/if}
         </button>
         <button class="text-slate-400 hover:text-white" on:click={() => suggestedLocale = null} aria-label="Close">

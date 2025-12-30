@@ -4,7 +4,7 @@ import { en, type Translations } from './en';
 import { ja } from './ja';
 
 export const localeMeta = {
-  'zh-Hant': { label: '繁體中文', hreflang: 'zh-Hant', htmlLang: 'zh-Hant' },
+  zh: { label: '中文', hreflang: 'zh', htmlLang: 'zh' },
   en: { label: 'English', hreflang: 'en', htmlLang: 'en' },
   ja: { label: '日本語', hreflang: 'ja', htmlLang: 'ja' },
 } as const;
@@ -15,7 +15,7 @@ export const locales = Object.keys(localeMeta) as Locale[];
 export const defaultLocale: Locale = 'en';
 
 const localeData: Record<Locale, Translations> = {
-  'zh-Hant': zh,
+  zh: zh,
   en,
   ja,
 };
@@ -46,7 +46,8 @@ export function isLocale(value?: string): value is Locale {
 }
 
 export function normalizeLocale(value?: string): Locale {
-  if (value === 'zh') return 'zh-Hant';
+  // Map various Chinese locale codes to 'zh'
+  if (value?.startsWith('zh')) return 'zh';
   return isLocale(value) ? value : defaultLocale;
 }
 

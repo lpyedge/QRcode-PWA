@@ -1,4 +1,7 @@
-/ /language 302
-/generate /zh-Hant/generate 301
-/scan /zh-Hant/scan 301
-/about /zh-Hant/about 301
+# Redirect root to default locale (en)
+/ /en/generate 302
+
+# Non-locale paths redirect to default locale
+/generate /en/generate 302
+/scan /en/scan 302
+/about /en/about 302
