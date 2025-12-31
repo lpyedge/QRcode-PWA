@@ -45,6 +45,19 @@ export function isLocale(value?: string): value is Locale {
   return !!value && (locales as readonly string[]).includes(value);
 }
 
+/**
+ * Check if a path segment looks like a locale code (including legacy ones).
+ * This is used for stripping locale prefixes from paths.
+ */
+function isLocaleSegment(value?: string): boolean {
+  if (!value) return false;
+  // Match current locales
+  if ((locales as readonly string[]).includes(value)) return true;
+  // Match legacy/variant Chinese locales (zh-Hant, zh-Hans, zh-TW, etc.)
+  if (value.startsWith('zh-')) return true;
+  return false;
+}
+
 export function normalizeLocale(value?: string): Locale {
   // Map various Chinese locale codes to 'zh'
   if (value?.startsWith('zh')) return 'zh';
@@ -53,7 +66,8 @@ export function normalizeLocale(value?: string): Locale {
 
 export function stripLocaleFromPath(pathname: string): string {
   const segments = pathname.split('/').filter(Boolean);
-  if (segments.length && isLocale(segments[0])) segments.shift();
+  // Use isLocaleSegment to handle both current and legacy locale codes
+  if (segments.length && isLocaleSegment(segments[0])) segments.shift();
   const rest = `/${segments.join('/')}`;
   return rest === '/' ? '/' : rest;
 }

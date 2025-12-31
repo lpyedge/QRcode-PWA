@@ -19,7 +19,7 @@ const config = {
         '*',
         '/en/scan', '/en/about', '/en/generate',
         '/ja/scan', '/ja/about', '/ja/generate',
-        '/zh-Hant/scan', '/zh-Hant/about', '/zh-Hant/generate'
+        '/zh/scan', '/zh/about', '/zh/generate'
       ]
     }
   },
