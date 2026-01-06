@@ -195,7 +195,7 @@
 
   function debounceRender(sig: string) {
     if (debounceTimer) clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => void scheduleRender(sig), 250);
+    debounceTimer = setTimeout(() => void scheduleRender(sig), CONFIG.generator.debounceMs);
   }
 
   async function scheduleRender(sig: string) {
@@ -226,6 +226,8 @@
       }
     } catch (e) {
       if (current === sequence) {
+        // 修復資源泄漏：在失敗分支也要釋放舊的 blob URL
+        if (qrDataUrl && qrDataUrl.startsWith('blob:')) URL.revokeObjectURL(qrDataUrl);
         previewError = e instanceof Error ? e.message : $t('generator.messages.generateFailed');
         qrDataUrl = '';
         qrSvg = '';

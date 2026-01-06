@@ -2,6 +2,7 @@
  * Mock for ZXing library in tests
  * 
  * Provides minimal mock implementations of ZXing types used in the codebase.
+ * This file is loaded via vitest setupFiles and registers the mock globally.
  */
 
 import { vi } from 'vitest';
@@ -87,6 +88,11 @@ export class BitMatrix {
 // Mock QRCodeWriter class
 export class QRCodeWriter {
   encode(content: string, format: typeof BarcodeFormat.QR_CODE, width: number, height: number, hints?: Map<unknown, unknown>): BitMatrix {
+    // Throw error for empty content (matches real ZXing behavior)
+    if (!content || content.length === 0) {
+      throw new Error('Found empty contents');
+    }
+    
     // Create a simple 21x21 QR matrix for testing
     const size = 21;
     const matrix = new BitMatrix(size, size);
@@ -182,3 +188,23 @@ export default {
   FormatException,
   ResultMetadataType,
 };
+
+// Register the mock for @zxing/library
+// This makes vi.mock work properly when tests import from @zxing/library
+vi.mock('@zxing/library', () => ({
+  EncodeHintType,
+  DecodeHintType,
+  BarcodeFormat,
+  BitMatrix,
+  QRCodeWriter,
+  QRCodeReader,
+  RGBLuminanceSource,
+  GlobalHistogramBinarizer,
+  HybridBinarizer,
+  BinaryBitmap,
+  Result,
+  NotFoundException,
+  ChecksumException,
+  FormatException,
+  ResultMetadataType,
+}));

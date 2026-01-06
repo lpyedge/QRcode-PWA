@@ -4,6 +4,7 @@
   import { fade } from 'svelte/transition';
   import { QrCameraScanner, type VideoReadyState } from '$utils/cameraQrScanner';
   import { QRDecoder } from '$utils/qrdecode';
+  import { CONFIG } from '$utils/config';
   import { t } from '$lib/i18n';
   import Dropdown from '$lib/components/Dropdown.svelte';
 
@@ -50,7 +51,8 @@
     label: d.label || $t('scanner.cameraDefault')
   }));
 
-  const MAX_HISTORY = 5;
+  // Use centralized config to avoid magic number drift
+  const MAX_HISTORY = CONFIG.scanner.maxHistory;
 
   onDestroy(() => {
     stopScanner();

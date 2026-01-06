@@ -48,7 +48,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
-        navigateFallback: '/',
+        // Disable navigateFallback for fully pre-rendered static site
+        // All routes are pre-rendered as HTML files, so fallback is not needed
+        // This avoids mismatch with start_url: '/en/generate'
+        navigateFallback: null,
         // Cache runtime resources
         runtimeCaching: [
           {

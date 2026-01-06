@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { onMount, onDestroy } from 'svelte';
   import { registerSW } from 'virtual:pwa-register';
+  import { CONFIG } from '$utils/config';
   import { t } from '$lib/i18n';
 
   // --- Update Notification State ---
@@ -34,7 +35,7 @@
         if (r) {
           swUpdateInterval = setInterval(() => {
             r.update();
-          }, 60 * 60 * 1000); // Check every hour instead of minute to be less aggressive
+          }, CONFIG.pwa.updateCheckInterval);
         }
       },
       onRegisterError(e) {
@@ -108,10 +109,10 @@
       const dismissed = localStorage.getItem('pwa-install-dismissed');
       if (!dismissed) return false;
       
-      // Auto-show again after 7 days
+      // Auto-show again after configured days
       const dismissedTime = parseInt(dismissed, 10);
       const daysSince = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
-      return daysSince < 7;
+      return daysSince < CONFIG.pwa.dismissResetDays;
     } catch {
       return false;
     }
@@ -149,6 +150,12 @@
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
+        // 記住用戶在系統 prompt 中的拒絕，避免頻繁彈出
+        try {
+          localStorage.setItem('pwa-install-dismissed', String(Date.now()));
+        } catch {
+          // Ignore localStorage errors
+        }
       }
     } catch (error) {
       console.error('Install prompt error:', error);

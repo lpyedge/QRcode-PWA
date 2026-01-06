@@ -2,8 +2,11 @@ import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'url';
 import path from 'path';
 
+// ESM-compatible way to get project root (replaces __dirname)
+const projectRoot = fileURLToPath(new URL('.', import.meta.url));
+
 // Resolve an absolute path to the mock file
-const mockEnvPath = fileURLToPath(new URL('./test/mocks/app-environment.js', import.meta.url));
+const mockEnvPath = path.resolve(projectRoot, './test/mocks/app-environment.js');
 
 export default defineConfig({
   test: {
@@ -17,7 +20,9 @@ export default defineConfig({
   resolve: {
     alias: {
       '$app/environment': mockEnvPath,
-      '$lib': path.resolve(__dirname, './src/lib')
+      '$lib': path.resolve(projectRoot, './src/lib'),
+      '$utils': path.resolve(projectRoot, './src/lib/utils'),
+      '$components': path.resolve(projectRoot, './src/lib/components')
     }
   },
   // Prevent loading Vite plugins (not needed for these unit tests)
