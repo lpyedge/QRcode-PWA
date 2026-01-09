@@ -5,7 +5,7 @@
   import { stylizeSvg } from '$utils/qrStylize';
   import { renderSvgToBlob } from '$utils/renderSvgToBlob';
   import {
-    DEFAULT_SETTINGS,
+    createDefaultSettings,
     buildPayload,
     type GeneratorMode,
     type GeneratorSettings,
@@ -29,7 +29,7 @@
     { id: 'svg' as QrExportFormat, label: $t('generator.formats.svg') },
   ];
 
-  let settings: GeneratorSettings = clone(DEFAULT_SETTINGS);
+  let settings: GeneratorSettings = clone(createDefaultSettings());
   let activeTab: PanelTab = 'content';
 
   let hydrated = false;
@@ -82,7 +82,7 @@
   }
 
   function resetSettings() {
-    settings = clone(DEFAULT_SETTINGS);
+    settings = clone(createDefaultSettings());
     activeTab = 'content';
   }
 

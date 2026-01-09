@@ -70,29 +70,30 @@ export interface GeneratorSettings {
   };
 }
 
-const _i18n = getTranslations();
-
-export const DEFAULT_SETTINGS: GeneratorSettings = {
+export function createDefaultSettings(): GeneratorSettings {
+  const i18n = getTranslations();
+  const defaults = i18n.generator?.defaults;
+  return {
   mode: 'text',
-  content: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.content) || '',
-  linkUrl: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.linkUrl) || '',
+  content: defaults?.content || '',
+  linkUrl: defaults?.linkUrl || '',
   ssid: '',
   password: '',
   encryption: 'WPA',
   hidden: false,
-  emailAddress: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.emailAddress) || '',
-  emailSubject: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.emailSubject) || '',
-  emailBody: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.emailBody) || '',
-  telNumber: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.telNumber) || '',
-  smsNumber: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.smsNumber) || '',
-  smsMessage: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.smsMessage) || '',
-  vcardFullName: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardFullName) || '',
-  vcardCompany: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardCompany) || '',
-  vcardTitle: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardTitle) || '',
-  vcardPhone: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardPhone) || '',
-  vcardEmail: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardEmail) || '',
-  vcardWebsite: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardWebsite) || '',
-  vcardAddress: (_i18n.generator && _i18n.generator.defaults && _i18n.generator.defaults.vcardAddress) || '',
+  emailAddress: defaults?.emailAddress || '',
+  emailSubject: defaults?.emailSubject || '',
+  emailBody: defaults?.emailBody || '',
+  telNumber: defaults?.telNumber || '',
+  smsNumber: defaults?.smsNumber || '',
+  smsMessage: defaults?.smsMessage || '',
+  vcardFullName: defaults?.vcardFullName || '',
+  vcardCompany: defaults?.vcardCompany || '',
+  vcardTitle: defaults?.vcardTitle || '',
+  vcardPhone: defaults?.vcardPhone || '',
+  vcardEmail: defaults?.vcardEmail || '',
+  vcardWebsite: defaults?.vcardWebsite || '',
+  vcardAddress: defaults?.vcardAddress || '',
   vcardNote: '',
   size: CONFIG.generator.defaultSize,
   margin: CONFIG.generator.defaultMargin,
@@ -120,7 +121,8 @@ export const DEFAULT_SETTINGS: GeneratorSettings = {
     backgroundMode: 'auto',
     backgroundColor: '#ffffff',
   },
-};
+  };
+}
 
 // ============================================================================
 // Input Validation & Sanitization
@@ -233,7 +235,10 @@ function buildTextPayload(settings: GeneratorSettings): string {
   const value = normalizeMultiline(settings.content);
   const i18n = getTranslations();
   if (!value) throw new Error(i18n.payloads.errors.enterText);
-  if (value.length > 4000) throw new Error(i18n.payloads.errors.textTooLong);
+  if (value.length > CONFIG.generator.maxTextLength) {
+    const tpl = i18n.payloads.errors.textTooLong || 'Text is too long (max {max} characters)';
+    throw new Error(tpl.replace('{max}', String(CONFIG.generator.maxTextLength)));
+  }
   return value;
 }
 
@@ -242,7 +247,10 @@ function buildUrlPayload(settings: GeneratorSettings): string {
   const i18n = getTranslations();
   if (!value) throw new Error(i18n.payloads.errors.enterLink);
   if (!isValidUrl(value)) throw new Error(i18n.payloads.errors.invalidLink);
-  if (value.length > 2048) throw new Error(i18n.payloads.errors.linkTooLong);
+  if (value.length > CONFIG.generator.maxUrlLength) {
+    const tpl = i18n.payloads.errors.linkTooLong || 'URL is too long (max {max} characters)';
+    throw new Error(tpl.replace('{max}', String(CONFIG.generator.maxUrlLength)));
+  }
   return value;
 }
 
@@ -250,14 +258,18 @@ function buildWifiPayload(settings: GeneratorSettings): string {
   const ssid = settings.ssid.trim();
   const i18n = getTranslations();
   if (!ssid) throw new Error(i18n.payloads.errors.enterSsid);
-  if (ssid.length > 32) throw new Error('SSID too long (max 32 characters)');
+  if (ssid.length > CONFIG.generator.maxSsidLength) {
+    const tpl = i18n.payloads.errors.ssidTooLong || 'SSID is too long (max {max} characters)';
+    throw new Error(tpl.replace('{max}', String(CONFIG.generator.maxSsidLength)));
+  }
   const encryption = normalizeWifiEncryption(settings.encryption);
   const password = encryption === 'nopass' ? '' : settings.password.trim();
   if (encryption !== 'nopass' && !password) {
     throw new Error(i18n.payloads.errors.wifiNeedPassword.replace('{encryption}', encryption));
   }
-  if (password.length > 63) {
-    throw new Error('Password too long (max 63 characters)');
+  if (password.length > CONFIG.generator.maxPasswordLength) {
+    const tpl = i18n.payloads.errors.passwordTooLong || 'Password is too long (max {max} characters)';
+    throw new Error(tpl.replace('{max}', String(CONFIG.generator.maxPasswordLength)));
   }
   const hidden = settings.hidden ? 'true' : 'false';
   return `WIFI:T:${encryption};S:${escapeWifiValue(ssid)};P:${escapeWifiValue(password)};H:${hidden};;`;

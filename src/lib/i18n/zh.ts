@@ -439,12 +439,14 @@ export const zh = {
   payloads: {
     errors: {
       enterText: '请输入文本内容',
-      textTooLong: '文本内容过长，请限制在 4000 字符以内',
+      textTooLong: '文本内容过长，请限制在 {max} 字符以内',
       enterLink: '请输入链接地址',
       invalidLink: '请输入有效的 HTTP 或 HTTPS 链接',
-      linkTooLong: '链接地址过长，请限制在 2048 字符以内',
+      linkTooLong: '链接地址过长，请限制在 {max} 字符以内',
       enterSsid: '请输入 Wi‑Fi 网络名称（SSID）',
+      ssidTooLong: 'SSID 过长，请限制在 {max} 字符以内',
       wifiNeedPassword: '{encryption} 加密的网络需要密码',
+      passwordTooLong: '密码过长，请限制在 {max} 字符以内',
       enterEmail: '请输入邮箱地址',
       invalidEmail: '请输入有效的邮箱地址',
       enterValidPhone: '请输入有效的电话号码',

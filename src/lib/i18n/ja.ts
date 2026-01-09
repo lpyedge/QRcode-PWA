@@ -440,12 +440,14 @@ export const ja = {
   payloads: {
     errors: {
       enterText: 'テキストを入力してください',
-      textTooLong: 'テキストが長すぎます（4000 文字以内にしてください）',
+      textTooLong: 'テキストが長すぎます（{max} 文字以内にしてください）',
       enterLink: 'URL を入力してください',
       invalidLink: '有効な HTTP / HTTPS URL を入力してください',
-      linkTooLong: 'URL が長すぎます（2048 文字以内にしてください）',
+      linkTooLong: 'URL が長すぎます（{max} 文字以内にしてください）',
       enterSsid: 'Wi‑Fi 名（SSID）を入力してください',
+      ssidTooLong: 'SSID が長すぎます（{max} 文字以内にしてください）',
       wifiNeedPassword: '{encryption} のネットワークにはパスワードが必要です',
+      passwordTooLong: 'パスワードが長すぎます（{max} 文字以内にしてください）',
       enterEmail: 'メールアドレスを入力してください',
       invalidEmail: '有効なメールアドレスを入力してください',
       enterValidPhone: '有効な電話番号を入力してください',

@@ -3,7 +3,9 @@
  * Tests validation, sanitization, and format generation
  */
 import { describe, it, expect } from 'vitest';
-import { buildPayload, _internal, DEFAULT_SETTINGS, type GeneratorSettings } from '$lib/utils/payloads';
+import { buildPayload, _internal, createDefaultSettings, type GeneratorSettings } from '$lib/utils/payloads';
+
+const DEFAULT_SETTINGS = createDefaultSettings();
 
 describe('Payload Internal Utilities', () => {
   describe('normalizeSingleLine', () => {

@@ -1,7 +1,7 @@
 # Redirect root to default locale (en)
-/ /en/generate 302
+/ /en/generate 200
 
 # Non-locale paths redirect to default locale
-/generate /en/generate 302
-/scan /en/scan 302
-/about /en/about 302
+/generate /en/generate 200
+/scan /en/scan 200
+/about /en/about 200

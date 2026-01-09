@@ -467,12 +467,14 @@ export const en = {
   payloads: {
     errors: {
       enterText: 'Please enter text content',
-      textTooLong: 'Text is too long. Please keep it within 4000 characters',
+      textTooLong: 'Text is too long. Please keep it within {max} characters',
       enterLink: 'Please enter a URL',
       invalidLink: 'Please enter a valid HTTP or HTTPS URL',
-      linkTooLong: 'URL is too long. Please keep it within 2048 characters',
+      linkTooLong: 'URL is too long. Please keep it within {max} characters',
       enterSsid: 'Please enter the Wi‑Fi network name (SSID)',
+      ssidTooLong: 'SSID is too long. Please keep it within {max} characters',
       wifiNeedPassword: '{encryption} networks require a password',
+      passwordTooLong: 'Password is too long. Please keep it within {max} characters',
       enterEmail: 'Please enter an email address',
       invalidEmail: 'Please enter a valid email address',
       enterValidPhone: 'Please enter a valid phone number',
