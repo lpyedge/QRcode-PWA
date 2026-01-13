@@ -7,7 +7,6 @@
   import {
     createDefaultSettings,
     buildPayload,
-    type GeneratorMode,
     type GeneratorSettings,
   } from '$utils/payloads';
   import { CONFIG } from '$utils/config';
@@ -21,13 +20,21 @@
   type PanelTab = 'content' | 'design';
   type QrExportFormat = 'png' | 'jpg' | 'svg';
 
-  const clone = <T,>(value: T): T => structuredClone(value);
+  // Feature detection
+  const hasStructuredClone = typeof structuredClone !== 'undefined';
+  const hasClipboardWrite = browser && typeof navigator?.clipboard?.write === 'function';
+  const hasClipboardItem = browser && typeof ClipboardItem !== 'undefined';
+  const isSecureContext = browser && window.isSecureContext;
+  const canCopyImage = hasClipboardWrite && hasClipboardItem && isSecureContext;
 
-  $: exportFormats = [
-    { id: 'png' as QrExportFormat, label: $t('generator.formats.png') },
-    { id: 'jpg' as QrExportFormat, label: $t('generator.formats.jpg') },
-    { id: 'svg' as QrExportFormat, label: $t('generator.formats.svg') },
-  ];
+  // Fallback for structuredClone
+  const clone = <T,>(value: T): T => {
+    if (hasStructuredClone) {
+      return structuredClone(value);
+    }
+    // Fallback: JSON-based deep clone (works for plain objects)
+    return JSON.parse(JSON.stringify(value)) as T;
+  };
 
   let settings: GeneratorSettings = clone(createDefaultSettings());
   let activeTab: PanelTab = 'content';
@@ -42,12 +49,12 @@
   let qrDataUrl = '';
   let downloadFormat: QrExportFormat = CONFIG.raster.defaultExportFormat;
   let downloadBusy = false;
-  let downloadMenuOpen = false;
-  let downloadMenuOpenFullscreen = false;
-  let errorCorrectionMenuOpen = false;
-  let errorCorrectionMenuOpenFullscreen = false;
-
-  let copyMessage = '';
+  let downloadMenuOpen = false; // Desktop preview area
+  let downloadMenuOpenMobile = false; // Mobile bottom bar
+  let downloadMenuOpenFullscreen = false; // Fullscreen preview
+  let errorCorrectionMenuOpen = false; // Desktop preview area
+  let errorCorrectionMenuOpenMobile = false; // Mobile bottom bar
+  let errorCorrectionMenuOpenFullscreen = false; // Fullscreen preview
   let mobileFullscreenOpen = false;
   let colorPickerOpen = false;
   let colorPickerLabel = '';
@@ -81,11 +88,6 @@
     settings = enforceRules({ ...settings, ...patch });
   }
 
-  function resetSettings() {
-    settings = clone(createDefaultSettings());
-    activeTab = 'content';
-  }
-
   function currentPayload(): string {
     return buildPayload(settings);
   }
@@ -93,8 +95,7 @@
   async function copyPayload() {
     try {
       await navigator.clipboard.writeText(currentPayload());
-      copyMessage = $t('generator.messages.copied');
-      setTimeout(() => (copyMessage = ''), 2000);
+      // Notification shown via toast/snackbar if needed
     } catch {
       // ignore
     }
@@ -104,7 +105,8 @@
   let showFullscreenCopyOverlay = false;
 
   async function copyQrImage(isFullscreen = false) {
-    if (!qrDataUrl) return;
+    if (!qrDataUrl || !canCopyImage) return;
+    
     try {
       const response = await fetch(qrDataUrl);
       let blob = await response.blob();
@@ -136,9 +138,24 @@
         blob = pngBlob;
       }
       
-      await navigator.clipboard.write([
-        new ClipboardItem({ 'image/png': blob })
-      ]);
+      // Safari workaround: wrap in try-catch and handle specific errors
+      try {
+        await navigator.clipboard.write([
+          new ClipboardItem({ 'image/png': blob })
+        ]);
+      } catch (clipboardError: any) {
+        // Safari may fail with ClipboardItem, try a second attempt with Promise-wrapped blob
+        if (clipboardError?.name === 'NotAllowedError' || clipboardError?.message?.includes('denied')) {
+          // User denied permission or not in secure context
+          throw new Error('Permission denied');
+        }
+        // Try Safari-specific approach: wrap blob in Promise
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'image/png': Promise.resolve(blob)
+          })
+        ]);
+      }
       
       // 显示遮罩
       if (isFullscreen) {
@@ -263,7 +280,8 @@
       a.href = url;
       a.download = `QRcode-${Date.now()}.${ext}`;
       a.click();
-      URL.revokeObjectURL(url);
+      // Delay revoke to ensure download completes in all browsers
+      setTimeout(() => URL.revokeObjectURL(url), 100);
     } catch (error) {
       console.error('Download failed:', error);
       previewError = $t('generator.messages.downloadFailed');
@@ -273,26 +291,23 @@
     }
   }
 
-  function formatLabel(format: QrExportFormat) {
-    return exportFormats.find((x) => x.id === format)?.label ?? format.toUpperCase();
-  }
-
-  function chooseDownloadFormat(format: QrExportFormat) {
-    downloadFormat = format;
-    downloadMenuOpen = false;
-  }
-
   function setErrorCorrection(level: GeneratorSettings['errorCorrectionLevel']) {
     setSettings({ errorCorrectionLevel: level });
   }
 
   function openMobileFullscreenPreview() {
     downloadMenuOpen = false;
+    downloadMenuOpenMobile = false;
+    errorCorrectionMenuOpen = false;
+    errorCorrectionMenuOpenMobile = false;
     mobileFullscreenOpen = true;
   }
 
   function closeMobileFullscreenPreview() {
-    downloadMenuOpen = false;
+    downloadMenuOpenMobile = false;
+    downloadMenuOpenFullscreen = false;
+    errorCorrectionMenuOpenMobile = false;
+    errorCorrectionMenuOpenFullscreen = false;
     mobileFullscreenOpen = false;
   }
 
@@ -390,17 +405,14 @@
           <ErrorCorrectionSelector
             value={settings.errorCorrectionLevel}
             logoEnabled={!!settings.logo?.enabled}
-            menuOpen={errorCorrectionMenuOpen}
+            bind:menuOpen={errorCorrectionMenuOpen}
             on:change={(e) => setErrorCorrection(e.detail)}
-            on:toggle={() => (errorCorrectionMenuOpen = !errorCorrectionMenuOpen)}
           />
           <DownloadButton
             busy={busy || downloadBusy}
-            format={downloadFormat}
-            menuOpen={downloadMenuOpen}
+            bind:format={downloadFormat}
+            bind:menuOpen={downloadMenuOpen}
             on:download={downloadCode}
-            on:formatChange={(e) => chooseDownloadFormat(e.detail)}
-            on:toggle={() => (downloadMenuOpen = !downloadMenuOpen)}
           />
         </div>
       </section>
@@ -417,6 +429,7 @@
           <p class="text-sm text-rose-300">{previewError}</p>
         {:else}
           <div class="flex items-center justify-between gap-4">
+            {#if canCopyImage}
             <div class="relative shrink-0">
               <button
                 type="button"
@@ -449,23 +462,21 @@
                 </svg>
               </button>
             </div>
+            {/if}
 
             <div class="flex flex-1 min-w-0 flex-col gap-2">
               <ErrorCorrectionSelector
                 value={settings.errorCorrectionLevel}
                 logoEnabled={!!settings.logo?.enabled}
-                menuOpen={errorCorrectionMenuOpen}
+                bind:menuOpen={errorCorrectionMenuOpenMobile}
                 compact={true}
                 on:change={(e) => setErrorCorrection(e.detail)}
-                on:toggle={() => (errorCorrectionMenuOpen = !errorCorrectionMenuOpen)}
               />
               <DownloadButton
                 busy={busy || downloadBusy}
-                format={downloadFormat}
-                menuOpen={downloadMenuOpen}
+                bind:format={downloadFormat}
+                bind:menuOpen={downloadMenuOpenMobile}
                 on:download={downloadCode}
-                on:formatChange={(e) => chooseDownloadFormat(e.detail)}
-                on:toggle={() => (downloadMenuOpen = !downloadMenuOpen)}
               />
             </div>
           </div>
@@ -497,6 +508,7 @@
 
       <div class="flex min-h-0 flex-1 flex-col p-4 [@media(orientation:landscape)]:flex-row [@media(orientation:landscape)]:items-center [@media(orientation:landscape)]:gap-6">
         <div class="flex min-h-0 flex-1 items-center justify-center">
+          {#if canCopyImage}
           <button
             type="button"
             class="relative"
@@ -519,6 +531,16 @@
               </div>
             {/if}
           </button>
+          {:else}
+          <div class="rounded-3xl bg-white p-5 shadow-2xl">
+            <img
+              src={qrDataUrl}
+              alt={$t('generator.previewLabel')}
+              class="max-h-full max-w-full rounded-xl"
+              style="width:min(92vw, 92vh); height:auto;"
+            />
+          </div>
+          {/if}
         </div>
 
         <div class="mt-5 flex shrink-0 flex-row items-center gap-3 [@media(orientation:landscape)]:mt-0 [@media(orientation:landscape)]:w-60 [@media(orientation:landscape)]:flex-col [@media(orientation:landscape)]:items-stretch">
@@ -526,19 +548,16 @@
             <ErrorCorrectionSelector
               value={settings.errorCorrectionLevel}
               logoEnabled={!!settings.logo?.enabled}
-              menuOpen={errorCorrectionMenuOpenFullscreen}
+              bind:menuOpen={errorCorrectionMenuOpenFullscreen}
               on:change={(e) => setErrorCorrection(e.detail)}
-              on:toggle={() => (errorCorrectionMenuOpenFullscreen = !errorCorrectionMenuOpenFullscreen)}
             />
           </div>
           <div class="relative flex-1">
             <DownloadButton
               busy={busy || downloadBusy}
-              format={downloadFormat}
-              menuOpen={downloadMenuOpenFullscreen}
+              bind:format={downloadFormat}
+              bind:menuOpen={downloadMenuOpenFullscreen}
               on:download={downloadCode}
-              on:formatChange={(e) => chooseDownloadFormat(e.detail)}
-              on:toggle={() => (downloadMenuOpenFullscreen = !downloadMenuOpenFullscreen)}
             />
           </div>
         </div>

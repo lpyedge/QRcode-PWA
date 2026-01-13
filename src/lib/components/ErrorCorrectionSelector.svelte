@@ -12,7 +12,6 @@
 
   const dispatch = createEventDispatcher<{
     change: GeneratorSettings['errorCorrectionLevel'];
-    toggle: void;
   }>();
 
   const levels = ['L', 'M', 'Q', 'H'];
@@ -41,7 +40,7 @@
       placement="top-end"
       containerClass="h-full"
       triggerClass={`flex h-full w-full items-center justify-between ${compact ? '' : 'border-l border-white/10'} bg-slate-900/30 px-3 font-mono text-sm text-white transition hover:bg-slate-900/50 focus:bg-slate-900/50 focus:outline-none`}
-      menuClass="w-[250%] right-0"
+      menuClass="min-w-full max-w-[min(250%,calc(100vw-2rem))] right-0"
       title={logoEnabled ? $t('generator.errorCorrection.logoHint') : ''}
       on:change={(e) => dispatch('change', e.detail)}
       bind:open={menuOpen}

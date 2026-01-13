@@ -11,8 +11,6 @@
 
   const dispatch = createEventDispatcher<{
     download: void;
-    formatChange: QrExportFormat;
-    toggle: void;
   }>();
 
   const exportFormats = [
@@ -41,8 +39,7 @@
       disabled={busy}
       containerClass="h-full"
       triggerClass="flex h-full w-full items-center justify-between rounded-r-2xl border-l border-slate-900/30 bg-cyan-500 px-3 text-sm font-semibold text-slate-900 disabled:pointer-events-none disabled:opacity-60"
-      menuClass="w-[250%] right-0"
-      on:change={(e) => dispatch('formatChange', e.detail)}
+      menuClass="min-w-full max-w-[min(250%,calc(100vw-2rem))] right-0"
       bind:open={menuOpen}
     >
       <span slot="trigger" let:displayLabel let:open class="flex w-full items-center justify-between">
