@@ -429,27 +429,33 @@
           <p class="text-sm text-rose-300">{previewError}</p>
         {:else}
           <div class="flex items-center justify-between gap-4">
-            {#if canCopyImage}
             <div class="relative shrink-0">
-              <button
-                type="button"
-                class="relative rounded-2xl bg-white/95 p-2 shadow-xl"
-                on:click={() => copyQrImage(false)}
-                disabled={busy}
-                aria-label={$t('common.copy')}
-              >
-                <img src={qrDataUrl} alt={$t('generator.previewLabel')} class="h-28 w-28 rounded-xl" />
-                {#if showCopyOverlay}
-                  <div class="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/80 backdrop-blur-sm" style="animation: fadeOut 1s ease-out forwards;">
-                    <div class="text-center">
-                      <svg class="mx-auto h-8 w-8 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      <p class="mt-2 text-sm font-medium text-white">{$t('generator.messages.qrCopied')}</p>
+              {#if canCopyImage}
+                <button
+                  type="button"
+                  class="relative rounded-2xl bg-white/95 p-2 shadow-xl"
+                  on:click={() => copyQrImage(false)}
+                  disabled={busy}
+                  aria-label={$t('common.copy')}
+                >
+                  <img src={qrDataUrl} alt={$t('generator.previewLabel')} class="h-28 w-28 rounded-xl" />
+                  {#if showCopyOverlay}
+                    <div class="absolute inset-0 flex items-center justify-center rounded-2xl bg-slate-900/80 backdrop-blur-sm" style="animation: fadeOut 1s ease-out forwards;">
+                      <div class="text-center">
+                        <svg class="mx-auto h-8 w-8 text-green-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <p class="mt-2 text-sm font-medium text-white">{$t('generator.messages.qrCopied')}</p>
+                      </div>
                     </div>
-                  </div>
-                {/if}
-              </button>
+                  {/if}
+                </button>
+              {:else}
+                <div class="relative rounded-2xl bg-white/90 p-2 shadow-xl">
+                  <img src={qrDataUrl} alt={$t('generator.previewLabel')} class="h-28 w-28 rounded-xl" />
+                </div>
+              {/if}
+
               <button
                 type="button"
                 class="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-cyan-500 shadow-lg hover:bg-cyan-400 md:hidden"
@@ -462,14 +468,12 @@
                 </svg>
               </button>
             </div>
-            {/if}
 
             <div class="flex flex-1 min-w-0 flex-col gap-2">
               <ErrorCorrectionSelector
                 value={settings.errorCorrectionLevel}
                 logoEnabled={!!settings.logo?.enabled}
                 bind:menuOpen={errorCorrectionMenuOpenMobile}
-                compact={true}
                 on:change={(e) => setErrorCorrection(e.detail)}
               />
               <DownloadButton

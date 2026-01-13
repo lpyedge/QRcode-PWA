@@ -31,6 +31,7 @@
       {busy ? $t('common.generating') : $t('common.download')}
     </button>
     
+    <!-- Keep menu width equal to the full split button (60/40) – do not shrink to trigger width. -->
     <Dropdown
       options={exportFormats}
       bind:value={format}
@@ -39,7 +40,7 @@
       disabled={busy}
       containerClass="h-full"
       triggerClass="flex h-full w-full items-center justify-between rounded-r-2xl border-l border-slate-900/30 bg-cyan-500 px-3 text-sm font-semibold text-slate-900 disabled:pointer-events-none disabled:opacity-60"
-      menuClass="min-w-full max-w-[min(250%,calc(100vw-2rem))] right-0"
+      menuClass="w-[250%] min-w-[250%] max-w-[min(250%,calc(100vw-2rem))] right-0"
       bind:open={menuOpen}
     >
       <span slot="trigger" let:displayLabel let:open class="flex w-full items-center justify-between">
