@@ -306,6 +306,10 @@ export const en = {
 
     subtitle: 'Scan using camera or upload a QR code image.',
 
+    preview: {
+      uploadedAlt: 'Uploaded QR image'
+    },
+
     // Form
     cameraLabel: 'Camera',
     noCameraDetected: 'No camera detected',
@@ -341,8 +345,8 @@ export const en = {
       empty: 'No history',
       content: 'Content:',
       sources: {
-        camera: 'camera',
-        upload: 'upload'
+        camera: 'Camera',
+        upload: 'Upload'
       }
     },
 

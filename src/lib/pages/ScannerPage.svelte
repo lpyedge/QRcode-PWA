@@ -1,12 +1,14 @@
 <script lang="ts">
   import { browser } from '$app/environment';
-  import { onDestroy, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { fade } from 'svelte/transition';
   import { QrCameraScanner, type VideoReadyState } from '$utils/cameraQrScanner';
   import { QRDecoder } from '$utils/qrdecode';
   import { CONFIG } from '$utils/config';
   import { t } from '$lib/i18n';
   import Dropdown from '$lib/components/Dropdown.svelte';
+
+  export let shareId: string | null = null;
 
   type ScanRecord = {
     id: string;
@@ -41,6 +43,7 @@
   
   let showCopyFeedback = false;
   let copyTimeout: ReturnType<typeof setTimeout> | null = null;
+  let lastLoadedShareId: string | null = null;
 
   let videoReadyState: VideoReadyState | null = null;
   let scanningState: { scanning: boolean; inFlight: boolean } = { scanning: false, inFlight: false };
@@ -239,6 +242,57 @@
     }
   }
 
+  async function loadSharedImage() {
+    if (!browser || !shareId) return;
+    lastLoadedShareId = shareId;
+
+    try {
+      const response = await fetch(`/api/share?id=${shareId}`);
+      if (!response.ok) {
+        console.error('Failed to load shared image');
+        return;
+      }
+
+      const metaHeader = response.headers.get('x-share-meta');
+      const meta = metaHeader ? JSON.parse(metaHeader) : {};
+      const blob = await response.blob();
+      const filename = meta.filename || 'shared.png';
+      const file = new File([blob], filename, { type: blob.type || meta.mimetype || 'image/png' });
+
+      // Stop camera if running
+      if (isScanning) stopScanner();
+
+      // Create preview
+      if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);
+      uploadedImageUrl = URL.createObjectURL(file);
+
+      // Decode
+      let decoder: QRDecoder | null = null;
+      try {
+        decoder = new QRDecoder();
+        const res = await decoder.decodeFromFile(file);
+        if (res?.ok) {
+          handleResult(res.text, 'upload');
+        } else {
+          permissionError = $t('scanner.errors.uploadFailed');
+        }
+      } catch (error) {
+        permissionError = $t('scanner.errors.uploadFailed');
+        console.error(error);
+      } finally {
+        try { decoder?.dispose(); } catch { /* intentionally empty */ }
+      }
+    } catch (error) {
+      console.error('Failed to load shared image:', error);
+    }
+  }
+
+  $: if (shareId && shareId !== lastLoadedShareId) {
+    loadSharedImage();
+  }
+
+  let switchingCamera = false;
+
   $: if (isScanning && !switchingCamera && activeDeviceId && selectedDeviceId !== activeDeviceId) {
     switchingCamera = true;
     Promise.resolve()
@@ -250,8 +304,6 @@
         switchingCamera = false;
       });
   }
-  
-  let switchingCamera = false;
 </script>
 
 <section class="space-y-6 py-6 md:py-10">
@@ -283,7 +335,7 @@
              </div>
           </div>
         {:else if uploadedImageUrl}
-          <img src={uploadedImageUrl} alt="Uploaded QR" class="h-full w-full object-contain bg-slate-900" />
+          <img src={uploadedImageUrl} alt={$t('scanner.preview.uploadedAlt')} class="h-full w-full object-contain bg-slate-900" />
         {:else}
           <div class="absolute inset-0 flex flex-col items-center justify-center text-slate-500 p-6 text-center">
             <svg class="w-16 h-16 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"></path></svg>
@@ -411,7 +463,7 @@
             {#each scanHistory as record}
               <li class="group relative rounded-2xl border border-white/5 bg-slate-900/20 p-4 hover:bg-slate-900/40 transition-colors">
                 <div class="flex items-center justify-between mb-2">
-                  <span class="text-[10px] uppercase tracking-wider font-bold text-slate-500">{record.source}</span>
+                  <span class="text-[10px] uppercase tracking-wider font-bold text-slate-500">{record.source === 'camera' ? $t('scanner.history.sources.camera') : $t('scanner.history.sources.upload')}</span>
                   <time class="text-[10px] text-slate-600">{new Date(record.timestamp).toLocaleTimeString()}</time>
                 </div>
                 <p class="line-clamp-2 break-all font-mono text-xs text-slate-300">{record.text}</p>

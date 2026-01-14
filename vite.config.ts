@@ -9,6 +9,12 @@ export default defineConfig({
     mkcert(),
     VitePWA({
       registerType: 'prompt',
+      srcDir: 'src',
+      filename: 'service-worker.ts',
+      strategies: 'injectManifest',
+      injectManifest: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}']
+      },
       manifest: {
         name: 'QRcode-PWA',
         short_name: 'QRcode-PWA',
@@ -19,6 +25,19 @@ export default defineConfig({
         background_color: '#0f172a',
         theme_color: '#0ea5e9',
         lang: 'en',
+        share_target: {
+          action: '/share',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            title: 'title',
+            text: 'text',
+            url: 'url',
+            files: [
+              { name: 'image', accept: ['image/*'] }
+            ]
+          }
+        },
         icons: [
           // SVG favicon (keeps vector fallback)
           {
@@ -46,50 +65,10 @@ export default defineConfig({
           }
         ]
       },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
-        // Disable navigateFallback for fully pre-rendered static site
-        // All routes are pre-rendered as HTML files, so fallback is not needed
-        // This avoids mismatch with start_url: '/en/generate'
-        navigateFallback: null,
-        // Cache runtime resources
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          }
-        ],
-        // Add SKIP_WAITING message handler
-        skipWaiting: true,
-        clientsClaim: true
-      },
       devOptions: {
         enabled: true,
-        suppressWarnings: true
+        suppressWarnings: true,
+        type: 'module'
       }
     }),
     {

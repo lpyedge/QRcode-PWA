@@ -288,6 +288,10 @@ export const zh = {
 
     subtitle: '使用摄像头扫描，或上传二维码图片。',
 
+    preview: {
+      uploadedAlt: '已上传的二维码图片'
+    },
+
     cameraLabel: '摄像头',
     noCameraDetected: '未检测到摄像头',
     cameraDefault: '摄像头',
@@ -318,8 +322,8 @@ export const zh = {
       empty: '暂无历史记录',
       content: '内容：',
       sources: {
-        camera: 'camera',
-        upload: 'upload'
+        camera: '摄像头',
+        upload: '上传'
       }
     },
 

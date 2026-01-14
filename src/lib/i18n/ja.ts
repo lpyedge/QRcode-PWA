@@ -288,6 +288,10 @@ export const ja = {
 
     subtitle: 'カメラでスキャンするか、QRコード画像をアップロード。',
 
+    preview: {
+      uploadedAlt: 'アップロードしたQR画像'
+    },
+
     cameraLabel: 'カメラ',
     noCameraDetected: 'カメラが見つかりません',
     cameraDefault: 'カメラ',
@@ -318,8 +322,8 @@ export const ja = {
       empty: '履歴はありません',
       content: '内容：',
       sources: {
-        camera: 'camera',
-        upload: 'upload'
+        camera: 'カメラ',
+        upload: 'アップロード'
       }
     },
 

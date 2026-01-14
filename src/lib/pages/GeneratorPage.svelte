@@ -17,6 +17,8 @@
   import DownloadButton from '$lib/components/DownloadButton.svelte';
   import { t } from '$lib/i18n';
 
+  export let shareId: string | null = null;
+
   type PanelTab = 'content' | 'design';
   type QrExportFormat = 'png' | 'jpg' | 'svg';
 
@@ -60,6 +62,7 @@
   let colorPickerLabel = '';
   let colorPickerValue = '#000000';
   let colorPickerApply: ((hex: string) => void) | null = null;
+  let lastLoadedShareId: string | null = null;
 
   function openColorPicker(label: string, value: string, apply: (hex: string) => void) {
     colorPickerLabel = label;
@@ -342,6 +345,43 @@
       document.removeEventListener('keydown', onKey, true);
     };
   });
+
+  async function loadSharedText() {
+    if (!browser || !shareId) return;
+
+    try {
+      const response = await fetch(`/api/share?id=${shareId}`);
+      if (!response.ok) {
+        console.error('Failed to load shared text');
+        return;
+      }
+
+      const json = await response.json();
+      if (json.type !== 'text' || !json.data) {
+        console.error('Invalid shared text data');
+        return;
+      }
+
+      const { title, text, url } = json.data;
+
+      // Determine which field to prefill
+      if (url && url.startsWith('http')) {
+        setSettings({ mode: 'url', linkUrl: url });
+      } else if (text) {
+        setSettings({ mode: 'text', content: `${title ? title + '\n' : ''}${text}` });
+      } else if (title) {
+        setSettings({ mode: 'text', content: title });
+      }
+      lastLoadedShareId = shareId;
+    } catch (error) {
+      console.error('Failed to load shared text:', error);
+    }
+  }
+
+  $: if (shareId && shareId !== lastLoadedShareId && hydrated) {
+    lastLoadedShareId = shareId;
+    loadSharedText();
+  }
 
   $: signature = JSON.stringify(settings);
   $: if (hydrated && signature !== activeSignature) {
