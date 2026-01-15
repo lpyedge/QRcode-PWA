@@ -14,7 +14,7 @@ export default defineConfig({
     globals: true,
     include: ['test/**/*.test.ts'],
     // Automatically load shared test setup (mocks, globals)
-    setupFiles: ['./test/mocks/zxing-mock.ts']
+    setupFiles: ['./test/mocks/indexeddb-mock.ts', './test/mocks/zxing-mock.ts']
   },
   // Use an alias so imports of `$app/environment` resolve to our test mock
   resolve: {

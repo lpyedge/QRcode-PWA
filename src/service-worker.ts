@@ -1,6 +1,9 @@
 /// <reference lib="webworker" />
 import { cleanupOutdatedCaches, precacheAndRoute } from 'workbox-precaching';
 import { clientsClaim } from 'workbox-core';
+import { pickLocale } from './lib/utils/shareLocale';
+import { SHARE_CLEANUP_COUNTER_THRESHOLD, SHARE_CLEANUP_INTERVAL_MS, SHARE_TTL_MS } from './lib/utils/shareConfig';
+import { cleanupExpiredShares, getAndDeleteShare, openShareDb, saveShare } from './lib/utils/shareDb';
 
 declare let self: ServiceWorkerGlobalScope;
 
@@ -44,14 +47,23 @@ async function handleShareTarget(request: Request): Promise<Response> {
     const image = formData.get('image') as File | null;
 
     // Store in IndexedDB
-    const db = await openShareDB();
+    const db = await openShareDb();
     const id = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
-    const locale = await pickLocale(request);
+    const locale = pickLocale(request, await listClientUrls());
+
+    // Cleanup expired data in background (throttled: every 10 shares or 5 minutes)
+    cleanupCounter++;
+    const now = Date.now();
+    if (cleanupCounter >= SHARE_CLEANUP_COUNTER_THRESHOLD || now - lastCleanupTime >= SHARE_CLEANUP_INTERVAL_MS) {
+      lastCleanupTime = now;
+      cleanupCounter = 0;
+      cleanupExpiredShares(db, SHARE_TTL_MS).catch((e) => console.warn('Share cleanup failed:', e));
+    }
 
     if (image && image.size > 0) {
       // Store image blob
       const blob = await image.arrayBuffer();
-      await saveToIDB(db, {
+      await saveShare(db, {
         id,
         type: 'image',
         timestamp: Date.now(),
@@ -63,7 +75,7 @@ async function handleShareTarget(request: Request): Promise<Response> {
       return Response.redirect(`/${locale}/scan?share=${id}`, 303);
     } else if (text || title || url) {
       // Store text data
-      await saveToIDB(db, {
+      await saveShare(db, {
         id,
         type: 'text',
         timestamp: Date.now(),
@@ -79,154 +91,74 @@ async function handleShareTarget(request: Request): Promise<Response> {
     }
   } catch (error) {
     console.error('Share target handling error:', error);
-    const locale = await safePickLocaleFallback(request);
+    const locale = pickLocale(request, await listClientUrls());
     return Response.redirect(`/${locale}/generate`, 303);
   }
 }
 
 async function handleShareDataRetrieval(id: string): Promise<Response> {
   try {
-    const db = await openShareDB();
-    const data = await getFromIDB(db, id);
+    const db = await openShareDb();
+    
+    // Get and delete in single readwrite transaction (atomic operation)
+    const data = await getAndDeleteShare(db, id);
 
     if (!data) {
       return new Response(JSON.stringify({ error: 'Not found' }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
       });
     }
 
-    // Delete after retrieval (one-time use)
-    await deleteFromIDB(db, id);
-
+    let response: Response;
     if (data.type === 'image') {
       const meta = JSON.stringify(data.metadata ?? {});
       const buffer = data.data as ArrayBuffer;
       const blob = new Blob([buffer], { type: data.metadata?.mimetype || 'image/png' });
-      return new Response(blob, {
+      response = new Response(blob, {
         headers: {
           'Content-Type': blob.type,
-          'X-Share-Meta': meta
+          'X-Share-Meta': meta,
+          'Cache-Control': 'no-store'
         }
       });
     } else {
-      return new Response(JSON.stringify({
+      response = new Response(JSON.stringify({
         type: 'text',
         data: data.data
       }), {
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
       });
     }
+
+    return response;
   } catch (error) {
     console.error('Share data retrieval error:', error);
     return new Response(JSON.stringify({ error: 'Internal error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-store'
+      }
     });
   }
 }
 
-// IndexedDB helpers
-const DB_NAME = 'qrcode-share';
-const DB_VERSION = 1;
-const STORE_NAME = 'shared-data';
+// Throttle cleanup to avoid performance impact
+let lastCleanupTime = 0;
+let cleanupCounter = 0;
 
-const SUPPORTED_LOCALES = ['en', 'zh', 'ja'];
-
-function extractLocaleFromUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    const seg = u.pathname.split('/').filter(Boolean);
-    const first = seg[0]?.toLowerCase();
-    if (SUPPORTED_LOCALES.includes(first)) return first;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function pickLocale(request: Request): Promise<string> {
-  // 1) Try active clients (honor current UI language)
+async function listClientUrls(): Promise<string[]> {
   try {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-    for (const client of clients) {
-      const loc = extractLocaleFromUrl(client.url);
-      if (loc) return loc;
-    }
+    return clients.map((client) => client.url);
   } catch {
-    /* ignore */
+    return [];
   }
-
-  // 2) Use Accept-Language
-  const header = request.headers.get('accept-language') || '';
-  const candidates = header
-    .split(',')
-    .map((part) => part.split(';')[0].trim().toLowerCase())
-    .filter(Boolean);
-
-  for (const cand of candidates) {
-    const base = cand.split('-')[0];
-    if (SUPPORTED_LOCALES.includes(base)) return base;
-  }
-
-  // 3) Fallback to default
-  return 'en';
-}
-
-async function safePickLocaleFallback(request: Request): Promise<string> {
-  try {
-    return await pickLocale(request);
-  } catch {
-    return 'en';
-  }
-}
-
-function openShareDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => resolve(request.result);
-
-    request.onupgradeneeded = (event) => {
-      const db = (event.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
-        store.createIndex('timestamp', 'timestamp', { unique: false });
-      }
-    };
-  });
-}
-
-function saveToIDB(db: IDBDatabase, data: any): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.add(data);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function getFromIDB(db: IDBDatabase, id: string): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.get(id);
-
-    request.onsuccess = () => resolve(request.result ?? null);
-    request.onerror = () => reject(request.error);
-  });
-}
-
-function deleteFromIDB(db: IDBDatabase, id: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    const store = tx.objectStore(STORE_NAME);
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
 }

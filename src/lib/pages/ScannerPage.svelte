@@ -1,12 +1,13 @@
-<script lang="ts">
+﻿<script lang="ts">
   import { browser } from '$app/environment';
-  import { onDestroy, onMount, tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
   import { fade } from 'svelte/transition';
   import { QrCameraScanner, type VideoReadyState } from '$utils/cameraQrScanner';
   import { QRDecoder } from '$utils/qrdecode';
   import { CONFIG } from '$utils/config';
   import { t } from '$lib/i18n';
   import Dropdown from '$lib/components/Dropdown.svelte';
+  import { fetchSharedImage } from '$lib/utils/shareData';
 
   export let shareId: string | null = null;
 
@@ -48,6 +49,7 @@
   let videoReadyState: VideoReadyState | null = null;
   let scanningState: { scanning: boolean; inFlight: boolean } = { scanning: false, inFlight: false };
   let unsubscribeStatus: (() => void) | null = null;
+  let deviceOptions: Array<{ value: string; label: string }> = [];
 
   $: deviceOptions = availableDevices.map(d => ({
     value: d.deviceId,
@@ -75,7 +77,7 @@
         const devices = await navigator.mediaDevices.enumerateDevices();
         availableDevices = devices.filter((device) => device.kind === 'videoinput');
         
-        // 优先选择后置摄像头
+        // 浼樺厛閫夋嫨鍚庣疆鎽勫儚澶?
         const backCamera = availableDevices.find(d => /back|environment/i.test(d.label));
         selectedDeviceId = backCamera?.deviceId ?? availableDevices[0]?.deviceId ?? '';
         permissionGranted = true;
@@ -217,7 +219,7 @@
       if (res?.ok) {
         handleResult(res.text, 'upload');
       } else {
-        permissionError = debug ? `${$t('scanner.errors.uploadFailed')}（${res?.reason ?? 'unknown'}）` : $t('scanner.errors.uploadFailed');
+        permissionError = debug ? `${$t('scanner.errors.uploadFailed')} (${res?.reason ?? 'unknown'})` : $t('scanner.errors.uploadFailed');
       }
     } catch (error) {
       permissionError = $t('scanner.errors.uploadFailed');
@@ -244,20 +246,16 @@
 
   async function loadSharedImage() {
     if (!browser || !shareId) return;
-    lastLoadedShareId = shareId;
 
+    const currentShareId = shareId; // Capture to prevent race condition
     try {
-      const response = await fetch(`/api/share?id=${shareId}`);
-      if (!response.ok) {
-        console.error('Failed to load shared image');
+      const result = await fetchSharedImage(currentShareId);
+      if (!result.ok) {
+        console.error('Failed to load shared image:', result.error);
+        permissionError = $t(result.error.key, result.error.fallback);
         return;
       }
-
-      const metaHeader = response.headers.get('x-share-meta');
-      const meta = metaHeader ? JSON.parse(metaHeader) : {};
-      const blob = await response.blob();
-      const filename = meta.filename || 'shared.png';
-      const file = new File([blob], filename, { type: blob.type || meta.mimetype || 'image/png' });
+      const { file } = result.data;
 
       // Stop camera if running
       if (isScanning) stopScanner();
@@ -273,6 +271,8 @@
         const res = await decoder.decodeFromFile(file);
         if (res?.ok) {
           handleResult(res.text, 'upload');
+          // Mark as loaded after successful decode
+          lastLoadedShareId = currentShareId;
         } else {
           permissionError = $t('scanner.errors.uploadFailed');
         }
@@ -481,5 +481,6 @@
     </div>
   </div>
 </section>
+
 
 
