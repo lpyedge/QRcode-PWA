@@ -318,6 +318,7 @@ export const en = {
     // Buttons
     startScanning: 'Start scanning',
     stopScanning: 'Stop scanning',
+    scanAgain: 'Scan again',
     scanFromImage: 'Scan from image',
 
     toggleTorch: {

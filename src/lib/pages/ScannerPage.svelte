@@ -58,6 +58,7 @@
 
   // Use centralized config to avoid magic number drift
   const MAX_HISTORY = CONFIG.scanner.maxHistory;
+  const scanLoopOptions = { fps: 12, stopOnFirstResult: true, onDecodeError: () => {} };
 
   onDestroy(() => {
     stopScanner();
@@ -121,7 +122,7 @@
       }
       scanner = new QrCameraScanner((text: string) => handleResult(text, 'camera'));
       await scanner.startCamera({ video: videoElement, deviceId: selectedDeviceId || undefined, playsInline: true });
-      scanner.startScanning({ fps: 12, stopOnFirstResult: true, onDecodeError: () => {} });
+      scanner.startScanning(scanLoopOptions);
       activeDeviceId = scanner.getActiveDeviceId() ?? (selectedDeviceId || '');
 
       // Check torch support
@@ -157,6 +158,11 @@
     torchSupported = false;
     videoReadyState = null;
     scanningState = { scanning: false, inFlight: false };
+  }
+
+  function resumeScanning() {
+    if (!scanner || !isScanning) return;
+    scanner.startScanning(scanLoopOptions);
   }
 
   function checkTorchCapability() {
@@ -417,7 +423,18 @@
     <div class="space-y-6">
       <!-- Result Card -->
       <div class="rounded-3xl border border-white/10 bg-slate-900/50 p-6">
-        <h2 class="text-xs uppercase tracking-[0.2em] text-cyan-200 mb-4">{$t('scanner.result.title')}</h2>
+        <div class="mb-4 flex items-center justify-between gap-3">
+          <h2 class="text-xs uppercase tracking-[0.2em] text-cyan-200">{$t('scanner.result.title')}</h2>
+          {#if isScanning && !scanningState.scanning}
+            <button
+              type="button"
+              class="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+              on:click={resumeScanning}
+            >
+              {$t('scanner.scanAgain', 'Scan again')}
+            </button>
+          {/if}
+        </div>
         
         {#if lastResult}
           <button 

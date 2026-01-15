@@ -59,8 +59,6 @@ export const zh = {
     unsupportedMode: '不支持的模式：{mode}'
   },
 
-  pages: {},
-
   generator: {
     title: '二维码生成与风格化',
     previewLabel: '预览',
@@ -298,6 +296,7 @@ export const zh = {
 
     startScanning: '开始扫描',
     stopScanning: '停止扫描',
+    scanAgain: '再扫一次',
     scanFromImage: '从图片识别',
 
     toggleTorch: {
@@ -497,6 +496,8 @@ export const zh = {
       rgbaLengthMismatch: 'RGBA 长度不匹配：得到 {got}，预期 {expected}（{w}x{h}）'
     }
   },
+
+  pages: {},
 
   layout: {
     appName: 'QRcode-PWA'

@@ -59,8 +59,6 @@ export const ja = {
     unsupportedMode: '未対応のモード：{mode}'
   },
 
-  pages: {},
-
   generator: {
     title: 'QRコード生成＆デザイン',
     previewLabel: 'プレビュー',
@@ -298,6 +296,7 @@ export const ja = {
 
     startScanning: 'スキャン開始',
     stopScanning: 'スキャン停止',
+    scanAgain: 'もう一度スキャン',
     scanFromImage: '画像から解析',
 
     toggleTorch: {
@@ -498,6 +497,8 @@ export const ja = {
       rgbaLengthMismatch: 'RGBA 長さが一致しません：{got} / {expected}（{w}x{h}）'
     }
   },
+
+  pages: {},
 
   layout: {
     appName: 'QRcode-PWA'
