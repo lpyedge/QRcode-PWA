@@ -47,36 +47,60 @@
   let homeHref = '';
   let navLinks: Array<{ href: string; labelKey: string }> = [];
   let suggestedLocale: Locale | null = null;
+  let promptDismissed = false;
+  let promptReady = false;
+
+  const LANGUAGE_PROMPT_KEY = 'qr-language-prompt-dismissed';
 
   const languageOptions = locales.map((l) => ({
     value: l,
     label: localeMeta[l].label,
   }));
 
-  onMount(() => {
-    if (!$page.params.lang) {
-      const browserLang = navigator.language.toLowerCase();
-      // Detect Chinese variants: zh, zh-cn, zh-tw, zh-hk, zh-sg, zh-hans, zh-hant, etc.
-      if (browserLang.startsWith('zh') && currentLocale !== 'zh') {
-        suggestedLocale = 'zh';
-      }
-      // Detect Japanese
-      else if (browserLang.startsWith('ja') && currentLocale !== 'ja') {
-        suggestedLocale = 'ja';
-      }
-      // Detect English variants: en, en-us, en-gb, en-au, en-ca, en-nz, en-in, etc.
-      else if (browserLang.startsWith('en') && currentLocale !== 'en') {
-        suggestedLocale = 'en';
-      }
+  function detectPreferredLocale(): Locale | null {
+    if (!browser) return null;
+    const languageList = navigator.languages?.length ? navigator.languages : [navigator.language];
+    for (const lang of languageList) {
+      const value = String(lang || '').toLowerCase();
+      if (value.startsWith('zh')) return 'zh';
+      if (value.startsWith('ja')) return 'ja';
+      if (value.startsWith('en')) return 'en';
     }
-  });
-
-  $: if ($page.params.lang) {
-    suggestedLocale = null;
+    return null;
   }
+
+  function updateSuggestedLocale() {
+    if (!browser || promptDismissed) {
+      suggestedLocale = null;
+      return;
+    }
+    const preferred = detectPreferredLocale();
+    suggestedLocale = preferred && preferred !== currentLocale ? preferred : null;
+  }
+
+  function dismissLanguagePrompt() {
+    suggestedLocale = null;
+    promptDismissed = true;
+    try {
+      localStorage.setItem(LANGUAGE_PROMPT_KEY, '1');
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  onMount(() => {
+    try {
+      promptDismissed = localStorage.getItem(LANGUAGE_PROMPT_KEY) === '1';
+    } catch {
+      promptDismissed = false;
+    }
+    promptReady = true;
+    updateSuggestedLocale();
+  });
 
   function switchLanguage() {
     if (suggestedLocale) {
+      dismissLanguagePrompt();
       goto(buildLocalePath(suggestedLocale, canonicalPath));
     }
   }
@@ -84,6 +108,7 @@
   function handleLanguageChange(event: CustomEvent<Locale>) {
     const newLocale = event.detail;
     const newPath = buildLocalePath(newLocale, canonicalPath);
+    dismissLanguagePrompt();
     goto(newPath);
   }
 
@@ -98,6 +123,7 @@
   $: currentLocale = normalizeLocale($page.params.lang);
   $: locale.set(currentLocale);
   $: if (browser) document.documentElement.lang = localeMeta[currentLocale].htmlLang;
+  $: if (browser && promptReady) updateSuggestedLocale();
 
   $: routePath = stripLocaleFromPath($page.url.pathname);
   $: siteOrigin =
@@ -179,7 +205,7 @@
             Switch
           {/if}
         </button>
-        <button class="text-slate-400 hover:text-white" on:click={() => suggestedLocale = null} aria-label="Close">
+        <button class="text-slate-400 hover:text-white" on:click={dismissLanguagePrompt} aria-label="Close">
           ✕
         </button>
       </div>
