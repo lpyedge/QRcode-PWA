@@ -1,4 +1,4 @@
-import { writable, derived, get } from 'svelte/store';
+﻿import { writable, derived, get } from 'svelte/store';
 import { zh } from './zh';
 import { en, type Translations } from './en';
 import { ja } from './ja';
@@ -22,24 +22,30 @@ const localeData: Record<Locale, Translations> = {
 
 export const locale = writable<Locale>(defaultLocale);
 
+function resolveTranslation(translations: Translations, key: string, fallback?: string): string {
+  const keys = key.split('.');
+  let value: unknown = translations;
+
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = (value as Record<string, unknown>)[k];
+    } else {
+      return fallback ?? key;
+    }
+  }
+
+  return typeof value === 'string' ? value : (fallback ?? key);
+}
+
 export const t = derived(locale, ($locale) => {
   const translations = localeData[$locale];
-
-  return function (key: string, fallback?: string): string {
-    const keys = key.split('.');
-    let value: unknown = translations;
-
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = (value as Record<string, unknown>)[k];
-      } else {
-        return fallback ?? key;
-      }
-    }
-
-    return typeof value === 'string' ? value : (fallback ?? key);
-  };
+  return (key: string, fallback?: string) => resolveTranslation(translations, key, fallback);
 });
+
+export function translate(localeValue: Locale, key: string, fallback?: string): string {
+  const translations = localeData[localeValue] ?? localeData[defaultLocale];
+  return resolveTranslation(translations, key, fallback);
+}
 
 export function isLocale(value?: string): value is Locale {
   return !!value && (locales as readonly string[]).includes(value);

@@ -502,7 +502,12 @@ export const ja = {
   pages: {},
 
   layout: {
-    appName: 'QRcode-PWA'
+    appName: 'QRcode-PWA',
+    languagePrompt: {
+      message: '{lang} を使用されているようです。{lang} に切り替えますか？',
+      action: '{lang} に切り替え',
+      close: '閉じる'
+    }
   },
 
   components: {

@@ -1,4 +1,4 @@
-<script lang="ts">
+﻿<script lang="ts">
   import '../app.postcss';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
@@ -11,6 +11,7 @@
     normalizeLocale,
     stripLocaleFromPath,
     buildLocalePath,
+    translate,
     type Locale,
   } from '$lib/i18n';
   import PwaHelper from '$lib/components/PwaHelper.svelte';
@@ -49,6 +50,9 @@
   let suggestedLocale: Locale | null = null;
   let promptDismissed = false;
   let promptReady = false;
+  let promptMessage = '';
+  let promptAction = '';
+  let promptCloseLabel = '';
 
   const LANGUAGE_PROMPT_KEY = 'qr-language-prompt-dismissed';
 
@@ -86,6 +90,10 @@
     } catch {
       // ignore storage errors
     }
+  }
+
+  function formatPromptText(template: string, langLabel: string) {
+    return template.split('{lang}').join(langLabel);
   }
 
   onMount(() => {
@@ -159,6 +167,22 @@
     href: buildLocalePath(currentLocale, item.path),
     labelKey: item.labelKey,
   }));
+  $: if (suggestedLocale) {
+    const label = localeMeta[suggestedLocale].label;
+    promptMessage = formatPromptText(
+      translate(suggestedLocale, 'layout.languagePrompt.message', $t('layout.languagePrompt.message')),
+      label
+    );
+    promptAction = formatPromptText(
+      translate(suggestedLocale, 'layout.languagePrompt.action', $t('layout.languagePrompt.action')),
+      label
+    );
+    promptCloseLabel = translate(suggestedLocale, 'layout.languagePrompt.close', $t('layout.languagePrompt.close'));
+  } else {
+    promptMessage = '';
+    promptAction = '';
+    promptCloseLabel = '';
+  }
 </script>
 
 <svelte:head>
@@ -187,26 +211,14 @@
   {#if suggestedLocale}
     <div class="relative z-50 flex items-center justify-center gap-4 border-b border-white/10 bg-slate-800 px-4 py-2 text-sm text-white">
       <span>
-        {#if suggestedLocale === 'zh'}
-          您似乎位於中文地區，是否切換至中文版？
-        {:else if suggestedLocale === 'ja'}
-          日本語を使用されているようです。日本語版に切り替えますか？
-        {:else if suggestedLocale === 'en'}
-          It looks like you prefer English. Switch to English version?
-        {/if}
+        {promptMessage}
       </span>
       <div class="flex items-center gap-4">
         <button class="font-bold text-cyan-300 hover:text-cyan-200" on:click={switchLanguage}>
-          {#if suggestedLocale === 'zh'}
-            切換
-          {:else if suggestedLocale === 'ja'}
-            切り替え
-          {:else if suggestedLocale === 'en'}
-            Switch
-          {/if}
+          {promptAction}
         </button>
-        <button class="text-slate-400 hover:text-white" on:click={dismissLanguagePrompt} aria-label="Close">
-          ✕
+        <button class="text-slate-400 hover:text-white" on:click={dismissLanguagePrompt} aria-label={promptCloseLabel || $t('layout.languagePrompt.close')}>
+          X
         </button>
       </div>
     </div>

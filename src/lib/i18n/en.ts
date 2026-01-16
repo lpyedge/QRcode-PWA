@@ -530,7 +530,12 @@ export const en = {
 
   pages: {},
   layout: {
-    appName: 'QRcode-PWA'
+    appName: 'QRcode-PWA',
+    languagePrompt: {
+      message: 'It looks like you prefer {lang}. Switch to that language?',
+      action: 'Switch to {lang}',
+      close: 'Close'
+    }
   },
 
   components: {

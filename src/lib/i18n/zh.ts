@@ -501,7 +501,12 @@ export const zh = {
   pages: {},
 
   layout: {
-    appName: 'QRcode-PWA'
+    appName: 'QRcode-PWA',
+    languagePrompt: {
+      message: '检测到你可能更习惯 {lang}，是否切换？',
+      action: '切换为 {lang}',
+      close: '关闭'
+    }
   },
 
   components: {
