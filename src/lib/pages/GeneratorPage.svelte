@@ -64,6 +64,19 @@
   let colorPickerValue = '#000000';
   let colorPickerApply: ((hex: string) => void) | null = null;
   let lastLoadedShareId: string | null = null;
+  let shareLoadStatus: 'idle' | 'loading' | 'error' | 'success' = 'idle';
+  let shareLoadError = '';
+  let defaultPreviewContent = '';
+
+  const DEFAULT_PREVIEW_STYLE = {
+    shapeColor: '#94a3b8',
+    backgroundColor: '#f8fafc',
+    shapeStyle: 'square',
+    borderStyle: 'square',
+    borderColor: '#94a3b8',
+    centerStyle: 'square',
+    centerColor: '#94a3b8',
+  } as const;
 
   function openColorPicker(label: string, value: string, apply: (hex: string) => void) {
     colorPickerLabel = label;
@@ -94,6 +107,53 @@
 
   function currentPayload(): string {
     return buildPayload(settings);
+  }
+
+  function getDefaultPreviewContent(): string {
+    if (!browser) return '';
+    try {
+      const href = window.location.href;
+      const url = new URL(href);
+      if (url.origin && url.origin !== 'null') return url.origin;
+      if (url.protocol && url.host) return `${url.protocol}//${url.host}`;
+      return href;
+    } catch {
+      return window.location.href || '';
+    }
+  }
+
+  function hasUserInput(next: GeneratorSettings): boolean {
+    switch (next.mode) {
+      case 'text':
+        return next.content.trim().length > 0;
+      case 'url':
+        return next.linkUrl.trim().length > 0;
+      case 'wifi':
+        return next.ssid.trim().length > 0 || next.password.trim().length > 0;
+      case 'email':
+        return (
+          next.emailAddress.trim().length > 0 ||
+          next.emailSubject.trim().length > 0 ||
+          next.emailBody.trim().length > 0
+        );
+      case 'tel':
+        return next.telNumber.trim().length > 0;
+      case 'sms':
+        return next.smsNumber.trim().length > 0 || next.smsMessage.trim().length > 0;
+      case 'vcard':
+        return [
+          next.vcardFullName,
+          next.vcardCompany,
+          next.vcardTitle,
+          next.vcardPhone,
+          next.vcardEmail,
+          next.vcardWebsite,
+          next.vcardAddress,
+          next.vcardNote,
+        ].some((v) => v.trim().length > 0);
+      default:
+        return false;
+    }
   }
 
   async function copyPayload() {
@@ -207,6 +267,10 @@
     });
   }
 
+  function buildPlaceholderSvg(baseSvg: string) {
+    return stylizeSvg(baseSvg, { ...DEFAULT_PREVIEW_STYLE });
+  }
+
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   onDestroy(() => {
@@ -226,15 +290,27 @@
     previewError = '';
 
     try {
+      let payload = '';
+      let usePlaceholder = false;
+      try {
+        payload = currentPayload();
+      } catch (e) {
+        usePlaceholder = true;
+        if (hasUserInput(settings)) {
+          previewError = e instanceof Error ? e.message : $t('generator.messages.generateFailed');
+        }
+        payload = defaultPreviewContent || getDefaultPreviewContent();
+      }
+
       const baseSvg = await generateSvg(
-        { content: currentPayload(), errorCorrection: settings.errorCorrectionLevel },
+        { content: payload, errorCorrection: settings.errorCorrectionLevel },
         {
           margin: Math.max(0, Math.floor(settings.margin ?? 4)),
           includeBackground: true,
           idPrefix: `qr-${Date.now()}`,
         }
       );
-      const styled = buildStylizedSvg(baseSvg);
+      const styled = usePlaceholder ? buildPlaceholderSvg(baseSvg) : buildStylizedSvg(baseSvg);
       const blob = new Blob([styled], { type: 'image/svg+xml;charset=utf-8' });
       const url = URL.createObjectURL(blob);
 
@@ -324,6 +400,7 @@
   onMount(() => {
     hydrated = true;
     activeSignature = '';
+    defaultPreviewContent = getDefaultPreviewContent();
 
     const onDocPointer = (e: Event) => {
       if (!downloadMenuOpen) return;
@@ -347,16 +424,20 @@
     };
   });
 
-  async function loadSharedText() {
+  async function loadSharedText(force = false) {
     if (!browser || !shareId) return;
+    if (!force && shareId === lastLoadedShareId) return;
 
     const currentShareId = shareId; // Capture to prevent race condition
+    lastLoadedShareId = currentShareId;
+    shareLoadStatus = 'loading';
+    shareLoadError = '';
     try {
       const result = await fetchSharedText(currentShareId);
       if (!result.ok) {
         console.error('Failed to load shared text:', result.error);
-        previewError = $t(result.error.key, result.error.fallback);
-        setTimeout(() => { previewError = ''; }, 3000);
+        shareLoadStatus = 'error';
+        shareLoadError = $t(result.error.key, result.error.fallback);
         return;
       }
 
@@ -375,12 +456,29 @@
       
       // Mark as loaded after successful processing
       lastLoadedShareId = currentShareId;
+      shareLoadStatus = 'success';
+      shareLoadError = '';
     } catch (error) {
       console.error('Failed to load shared text:', error);
+      shareLoadStatus = 'error';
+      shareLoadError = $t('share.errors.fetchFailed', 'Failed to load shared data');
+    } finally {
+      if (shareLoadStatus === 'loading') shareLoadStatus = 'idle';
     }
   }
 
-  $: if (shareId && shareId !== lastLoadedShareId && hydrated) {
+  function retryShareLoad() {
+    if (shareLoadStatus === 'loading') return;
+    void loadSharedText(true);
+  }
+
+  $: if (!shareId && (shareLoadError || shareLoadStatus !== 'idle')) {
+    shareLoadError = '';
+    shareLoadStatus = 'idle';
+    lastLoadedShareId = null;
+  }
+
+  $: if (shareId && hydrated) {
     loadSharedText();
   }
 
@@ -395,6 +493,22 @@
   <header class="space-y-2 text-center pt-6 md:pt-0">
     <h1 class="text-2xl font-bold text-white md:text-4xl">{$t('generator.title')}</h1>
   </header>
+
+  {#if shareLoadError}
+    <div class="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span>{shareLoadError}</span>
+        <button
+          type="button"
+          class="rounded-xl border border-amber-300/40 bg-amber-200/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:border-amber-200/70 disabled:cursor-not-allowed disabled:opacity-60"
+          on:click={retryShareLoad}
+          disabled={shareLoadStatus === 'loading'}
+        >
+          {$t('common.retry')}
+        </button>
+      </div>
+    </div>
+  {/if}
 
   <div class="grid gap-6 md:grid-cols-[1fr,0.72fr] lg:grid-cols-[1.15fr,0.85fr]">
     <div class="min-w-0 space-y-6">
@@ -426,19 +540,22 @@
         </div>
 
         <div class="mt-4 flex min-h-[240px] flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-slate-900/60 p-4 lg:mt-5 lg:min-h-[360px] lg:p-6">
-          {#if previewError}
-            <p class="text-sm text-rose-300">{previewError}</p>
-          {:else if busy && !qrDataUrl}
+          {#if busy && !qrDataUrl}
             <p class="animate-pulse text-sm text-slate-400">{$t('common.generating')}</p>
-          {:else if qrDataUrl}
-            <img
-              src={qrDataUrl}
-              alt={$t('generator.previewLabel')}
-              class="mx-auto max-w-full shadow-2xl"
-              style={`width:min(${settings.size}px, 60vh, 100%); max-height:60vh;`}
-            />
           {:else}
-            <p class="text-sm text-slate-500">{$t('generator.previewEmpty')}</p>
+            {#if previewError}
+              <p class="text-sm text-rose-300">{previewError}</p>
+            {/if}
+            {#if qrDataUrl}
+              <img
+                src={qrDataUrl}
+                alt={$t('generator.previewLabel')}
+                class="mx-auto max-w-full shadow-2xl"
+                style={`width:min(${settings.size}px, 60vh, 100%); max-height:60vh;`}
+              />
+            {:else}
+              <p class="text-sm text-slate-500">{$t('generator.previewEmpty')}</p>
+            {/if}
           {/if}
         </div>
 
@@ -468,7 +585,8 @@
       <div class="px-4 py-4">
         {#if previewError}
           <p class="text-sm text-rose-300">{previewError}</p>
-        {:else}
+        {/if}
+        {#if qrDataUrl}
           <div class="flex items-center justify-between gap-4">
             <div class="relative shrink-0">
               {#if canCopyImage}

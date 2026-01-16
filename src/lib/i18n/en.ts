@@ -6,6 +6,7 @@ export const en = {
     cancel: 'Cancel',
     confirm: 'Confirm',
     reset: 'Reset',
+    retry: 'Retry',
     download: 'Download',
     upload: 'Upload',
     delete: 'Delete',

@@ -6,6 +6,7 @@ export const ja = {
     cancel: 'キャンセル',
     confirm: '確認',
     reset: 'リセット',
+    retry: '再試行',
     download: 'ダウンロード',
     upload: 'アップロード',
     delete: '削除',

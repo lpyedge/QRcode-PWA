@@ -6,6 +6,7 @@ export const zh = {
     cancel: '取消',
     confirm: '确认',
     reset: '重置',
+    retry: '重试',
     download: '下载',
     upload: '上传',
     delete: '删除',

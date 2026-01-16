@@ -45,6 +45,8 @@
   let showCopyFeedback = false;
   let copyTimeout: ReturnType<typeof setTimeout> | null = null;
   let lastLoadedShareId: string | null = null;
+  let shareLoadStatus: 'idle' | 'loading' | 'error' | 'success' = 'idle';
+  let shareLoadError = '';
 
   let videoReadyState: VideoReadyState | null = null;
   let scanningState: { scanning: boolean; inFlight: boolean } = { scanning: false, inFlight: false };
@@ -250,15 +252,20 @@
     }
   }
 
-  async function loadSharedImage() {
+  async function loadSharedImage(force = false) {
     if (!browser || !shareId) return;
+    if (!force && shareId === lastLoadedShareId) return;
 
     const currentShareId = shareId; // Capture to prevent race condition
+    lastLoadedShareId = currentShareId;
+    shareLoadStatus = 'loading';
+    shareLoadError = '';
     try {
       const result = await fetchSharedImage(currentShareId);
       if (!result.ok) {
         console.error('Failed to load shared image:', result.error);
-        permissionError = $t(result.error.key, result.error.fallback);
+        shareLoadStatus = 'error';
+        shareLoadError = $t(result.error.key, result.error.fallback);
         return;
       }
       const { file } = result.data;
@@ -279,21 +286,40 @@
           handleResult(res.text, 'upload');
           // Mark as loaded after successful decode
           lastLoadedShareId = currentShareId;
+          shareLoadStatus = 'success';
+          shareLoadError = '';
         } else {
-          permissionError = $t('scanner.errors.uploadFailed');
+          shareLoadStatus = 'error';
+          shareLoadError = $t('scanner.errors.uploadFailed');
         }
       } catch (error) {
-        permissionError = $t('scanner.errors.uploadFailed');
+        shareLoadStatus = 'error';
+        shareLoadError = $t('scanner.errors.uploadFailed');
         console.error(error);
       } finally {
         try { decoder?.dispose(); } catch { /* intentionally empty */ }
       }
     } catch (error) {
       console.error('Failed to load shared image:', error);
+      shareLoadStatus = 'error';
+      shareLoadError = $t('share.errors.fetchFailed', 'Failed to load shared data');
+    } finally {
+      if (shareLoadStatus === 'loading') shareLoadStatus = 'idle';
     }
   }
 
-  $: if (shareId && shareId !== lastLoadedShareId) {
+  function retryShareLoad() {
+    if (shareLoadStatus === 'loading') return;
+    void loadSharedImage(true);
+  }
+
+  $: if (!shareId && (shareLoadError || shareLoadStatus !== 'idle')) {
+    shareLoadError = '';
+    shareLoadStatus = 'idle';
+    lastLoadedShareId = null;
+  }
+
+  $: if (shareId) {
     loadSharedImage();
   }
 
@@ -316,6 +342,22 @@
   <header class="space-y-2 text-center">
     <h1 class="text-2xl font-bold text-white md:text-4xl">{$t('scanner.title')}</h1>
   </header>
+
+  {#if shareLoadError}
+    <div class="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm text-amber-100">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span>{shareLoadError}</span>
+        <button
+          type="button"
+          class="rounded-xl border border-amber-300/40 bg-amber-200/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:border-amber-200/70 disabled:cursor-not-allowed disabled:opacity-60"
+          on:click={retryShareLoad}
+          disabled={shareLoadStatus === 'loading'}
+        >
+          {$t('common.retry')}
+        </button>
+      </div>
+    </div>
+  {/if}
 
   <div class="grid gap-8 lg:grid-cols-[1fr,1fr]">
     <!-- Left Column: Preview & Main Actions -->
