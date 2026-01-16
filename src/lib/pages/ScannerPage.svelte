@@ -257,11 +257,13 @@
     if (!force && shareId === lastLoadedShareId) return;
 
     const currentShareId = shareId; // Capture to prevent race condition
+    const isStale = () => currentShareId !== shareId;
     lastLoadedShareId = currentShareId;
     shareLoadStatus = 'loading';
     shareLoadError = '';
     try {
       const result = await fetchSharedImage(currentShareId);
+      if (isStale()) return;
       if (!result.ok) {
         console.error('Failed to load shared image:', result.error);
         shareLoadStatus = 'error';
@@ -269,6 +271,7 @@
         return;
       }
       const { file } = result.data;
+      if (isStale()) return;
 
       // Stop camera if running
       if (isScanning) stopScanner();
@@ -282,6 +285,7 @@
       try {
         decoder = new QRDecoder();
         const res = await decoder.decodeFromFile(file);
+        if (isStale()) return;
         if (res?.ok) {
           handleResult(res.text, 'upload');
           // Mark as loaded after successful decode
@@ -293,6 +297,7 @@
           shareLoadError = $t('scanner.errors.uploadFailed');
         }
       } catch (error) {
+        if (isStale()) return;
         shareLoadStatus = 'error';
         shareLoadError = $t('scanner.errors.uploadFailed');
         console.error(error);
@@ -300,10 +305,12 @@
         try { decoder?.dispose(); } catch { /* intentionally empty */ }
       }
     } catch (error) {
+      if (isStale()) return;
       console.error('Failed to load shared image:', error);
       shareLoadStatus = 'error';
       shareLoadError = $t('share.errors.fetchFailed', 'Failed to load shared data');
     } finally {
+      if (isStale()) return;
       if (shareLoadStatus === 'loading') shareLoadStatus = 'idle';
     }
   }

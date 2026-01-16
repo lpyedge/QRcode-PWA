@@ -477,7 +477,7 @@ export const en = {
       enterLink: 'Please enter a URL',
       invalidLink: 'Please enter a valid HTTP or HTTPS URL',
       linkTooLong: 'URL is too long. Please keep it within {max} characters',
-      enterSsid: 'Please enter the Wi‑Fi network name (SSID)',
+      enterSsid: 'Please enter the Wi-Fi network name (SSID)',
       ssidTooLong: 'SSID is too long. Please keep it within {max} characters',
       wifiNeedPassword: '{encryption} networks require a password',
       passwordTooLong: 'Password is too long. Please keep it within {max} characters',
@@ -486,6 +486,15 @@ export const en = {
       enterValidPhone: 'Please enter a valid phone number',
       enterValidSms: 'Please enter a valid SMS number',
       enterContactName: 'Please enter a contact name'
+    }
+  },
+
+  share: {
+    errors: {
+      notFound: 'Shared data not found',
+      expired: 'Shared data expired',
+      invalid: 'Shared data is invalid',
+      fetchFailed: 'Failed to load shared data'
     }
   },
 

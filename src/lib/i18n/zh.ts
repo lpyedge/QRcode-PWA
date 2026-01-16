@@ -1,4 +1,4 @@
-export const zh = {
+﻿export const zh = {
   common: {
     copy: '复制',
     open: '打开',
@@ -459,6 +459,15 @@ export const zh = {
     }
   },
 
+
+  share: {
+    errors: {
+      notFound: '分享内容不存在',
+      expired: '分享内容已过期',
+      invalid: '分享内容无效',
+      fetchFailed: '加载分享内容失败'
+    }
+  },
   utils: {
     renderSvgToBlob: {
       browserError: 'renderSvgToBlob 需要浏览器环境',

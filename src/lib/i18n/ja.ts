@@ -1,4 +1,4 @@
-export const ja = {
+﻿export const ja = {
   common: {
     copy: 'コピー',
     open: '開く',
@@ -460,6 +460,15 @@ export const ja = {
     }
   },
 
+
+  share: {
+    errors: {
+      notFound: '共有データが見つかりません',
+      expired: '共有データの期限が切れています',
+      invalid: '共有データが無効です',
+      fetchFailed: '共有データの読み込みに失敗しました'
+    }
+  },
   utils: {
     renderSvgToBlob: {
       browserError: 'renderSvgToBlob はブラウザ環境が必要です',

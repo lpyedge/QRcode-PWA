@@ -429,11 +429,13 @@
     if (!force && shareId === lastLoadedShareId) return;
 
     const currentShareId = shareId; // Capture to prevent race condition
+    const isStale = () => currentShareId !== shareId;
     lastLoadedShareId = currentShareId;
     shareLoadStatus = 'loading';
     shareLoadError = '';
     try {
       const result = await fetchSharedText(currentShareId);
+      if (isStale()) return;
       if (!result.ok) {
         console.error('Failed to load shared text:', result.error);
         shareLoadStatus = 'error';
@@ -442,6 +444,7 @@
       }
 
       const { title, text, url } = result.data;
+      if (isStale()) return;
 
       // Prefer text > url > title
       if (text) {
@@ -459,10 +462,12 @@
       shareLoadStatus = 'success';
       shareLoadError = '';
     } catch (error) {
+      if (isStale()) return;
       console.error('Failed to load shared text:', error);
       shareLoadStatus = 'error';
       shareLoadError = $t('share.errors.fetchFailed', 'Failed to load shared data');
     } finally {
+      if (isStale()) return;
       if (shareLoadStatus === 'loading') shareLoadStatus = 'idle';
     }
   }
