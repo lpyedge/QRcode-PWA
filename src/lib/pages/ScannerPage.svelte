@@ -100,6 +100,9 @@
 
   async function startScanner() {
     if (!browser) return;
+
+    // Clear previous errors when initiating a new scan session
+    permissionError = '';
     
     // Clear uploaded image when starting camera
     if (uploadedImageUrl) {
@@ -180,6 +183,8 @@
   }
 
   function handleResult(text: string, source: 'camera' | 'upload') {
+    // Clear stale error banner once we got a valid result
+    permissionError = '';
     lastResult = text;
     const supportsRandomUuid = typeof crypto.randomUUID === 'function';
     const id = supportsRandomUuid ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`;
@@ -214,6 +219,8 @@
 
     // Stop camera if running
     if (isScanning) stopScanner();
+
+    permissionError = '';
 
     // Create preview
     if (uploadedImageUrl) URL.revokeObjectURL(uploadedImageUrl);

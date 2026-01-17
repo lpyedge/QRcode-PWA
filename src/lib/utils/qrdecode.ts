@@ -466,9 +466,19 @@ export class QRDecoder {
       throw new Error(i18n.utils?.errors?.fileNotImage || 'File is not an image');
     }
 
+    const MAX_FILE_EDGE = 1600;
+
     if (typeof createImageBitmap === 'function') {
       try {
-        const bmp = await createImageBitmap(file);
+        let bmp = await createImageBitmap(file);
+        const { w: targetW, h: targetH } = this.clampSize(bmp.width, bmp.height, MAX_FILE_EDGE);
+        if (targetW !== bmp.width || targetH !== bmp.height) {
+          try {
+            const resized = await createImageBitmap(bmp, { resizeWidth: targetW, resizeHeight: targetH, resizeQuality: 'high' as any });
+            try { (bmp as unknown as { close?: () => void }).close?.(); } catch { /* optional close */ }
+            bmp = resized;
+          } catch { /* if resize fails, keep original bmp */ }
+        }
         try {
           return await this.decodeFromSource(bmp, bmp.width, bmp.height, options);
         } finally {
@@ -490,7 +500,24 @@ export class QRDecoder {
           reject(new Error(i18n.utils?.errors?.failedLoadImage || 'Failed to load image file'));
         };
       });
-      // decode 完成后再 revoke 更明确
+      // Downscale large photos to avoid excessive memory on mobile before decoding
+      const imgW = img.naturalWidth || img.width;
+      const imgH = img.naturalHeight || img.height;
+      const target = this.clampSize(imgW, imgH, MAX_FILE_EDGE);
+      if (target.w !== imgW || target.h !== imgH) {
+        const canvas = document.createElement('canvas');
+        canvas.width = target.w;
+        canvas.height = target.h;
+        const ctx = canvas.getContext('2d', { willReadFrequently: true } as CanvasRenderingContext2DSettings) || canvas.getContext('2d');
+        if (!ctx) {
+          const i18n = getTranslations();
+          throw new Error(i18n.utils?.errors?.context2DUnavailable || '2D context not available');
+        }
+        ctx.drawImage(img, 0, 0, target.w, target.h);
+        const res = await this.decodeFromCanvas(canvas, options);
+        return res;
+      }
+
       const res = await this.decodeFromImage(img, options);
       return res;
     } finally {

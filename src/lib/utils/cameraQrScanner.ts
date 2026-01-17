@@ -173,25 +173,42 @@ export class QrCameraScanner {
     this.videoEl.muted = true;
     this.videoEl.autoplay = true;
 
-    const videoConstraints: MediaTrackConstraints = {
-      width: opts.width ? { ideal: opts.width } : undefined,
-      height: opts.height ? { ideal: opts.height } : undefined,
+    const buildVideoConstraints = (preferDevice: boolean): MediaTrackConstraints => {
+      const videoConstraints: MediaTrackConstraints = {
+        width: opts.width ? { ideal: opts.width } : undefined,
+        height: opts.height ? { ideal: opts.height } : undefined,
+      };
+
+      if (preferDevice && opts.deviceId) {
+        videoConstraints.deviceId = { exact: opts.deviceId };
+      } else if (opts.facingMode) {
+        videoConstraints.facingMode = { ideal: opts.facingMode };
+      } else {
+        videoConstraints.facingMode = { ideal: 'environment' };
+      }
+      return videoConstraints;
     };
 
-    if (opts.deviceId) {
-      videoConstraints.deviceId = { exact: opts.deviceId };
-    } else if (opts.facingMode) {
-      videoConstraints.facingMode = { ideal: opts.facingMode };
-    } else {
-      videoConstraints.facingMode = { ideal: 'environment' };
-    }
-
     try {
-      this.stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: opts.audio ?? false });
+      this.stream = await navigator.mediaDevices.getUserMedia({ video: buildVideoConstraints(true), audio: opts.audio ?? false });
     } catch (e) {
-      // If getUserMedia fails, ensure we don't leave partial state bound to this scanner
-      try { this.stopCamera(); } catch { /* cleanup may fail */ }
-      throw e;
+      const name = (e as { name?: string })?.name ?? '';
+      const isMissingDevice = /NotFoundError|OverconstrainedError|ConstraintNotSatisfiedError/i.test(name);
+      // Retry without deviceId if the chosen device vanished (e.g., unplugged webcam)
+      if (opts.deviceId && isMissingDevice) {
+        debug('startCamera fallback to facingMode after device failure', { name, deviceId: opts.deviceId });
+        try {
+          this.stream = await navigator.mediaDevices.getUserMedia({ video: buildVideoConstraints(false), audio: opts.audio ?? false });
+        } catch (fallbackErr) {
+          // If fallback also fails, propagate the original error for clarity
+          try { this.stopCamera(); } catch { /* cleanup may fail */ }
+          throw e;
+        }
+      } else {
+        // If getUserMedia fails, ensure we don't leave partial state bound to this scanner
+        try { this.stopCamera(); } catch { /* cleanup may fail */ }
+        throw e;
+      }
     }
 
     const track = this.stream.getVideoTracks()[0];
